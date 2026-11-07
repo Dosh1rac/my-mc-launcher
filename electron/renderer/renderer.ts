@@ -1,3 +1,5 @@
+import "./space";
+
 type ProgressInfo = { type: string; task: number; total: number };
 type DownloadInfo = { name: string; current: number; total: number };
 type DeviceCode = { verificationUri: string; userCode: string };
