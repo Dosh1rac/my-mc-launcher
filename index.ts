@@ -1,71 +1,56 @@
 import { writeFileSync } from "node:fs";
-import { Client, Authenticator } from "minecraft-launcher-core";
+import { launch } from "./core";
 
-const launcher = new Client();
 const DRY_RUN = process.argv.includes("--dry-run");
+const OFFLINE = process.argv.includes("--offline");
 
 async function main() {
+  await launch(
+    { offline: OFFLINE || DRY_RUN },
+    {
+      onLog: (line) => console.log(line),
 
-  const auth = await Authenticator.getAuth("Player");
+      onProgress: (p) =>
+        console.log(`[progress] ${p.type}: ${p.task}/${p.total}`),
 
-  const opts = {
-    authorization: auth,
-    root: "./.minecraft",
-    version: {
-      number: "1.20.1",
-      type: "release",
-    },
-    memory: {
-      max: "2G",
-      min: "1G",
-    },
+      onDownload: (d) =>
+        console.log(`[download] ${d.name} ${d.current}/${d.total}`),
 
-  };
+      onDeviceCode: ({ verificationUri, userCode }) => {
+        console.log("");
+        console.log("Откройте в браузере:", verificationUri);
+        console.log("И введите код:      ", userCode);
+        console.log("");
+      },
 
-  launcher.on("debug", (msg) => console.log("[debug]", msg));
-  launcher.on("data", (msg) => console.log("[game]", msg.toString().trim()));
+      onArguments: (args) => {
+        writeFileSync("last-launch-args.json", JSON.stringify(args, null, 2));
 
-  launcher.on("arguments", (args: string[]) => {
-    writeFileSync("last-launch-args.json", JSON.stringify(args, null, 2));
+        const cpIndex = args.indexOf("-cp");
+        const classPath = cpIndex !== -1 ? args[cpIndex + 1] : "";
+        const mainClass = cpIndex !== -1 ? args[cpIndex + 2] : "?";
 
-    const cpIndex = args.indexOf("-cp");
-    const classPath = cpIndex !== -1 ? args[cpIndex + 1] : "";
-    const mainClass = cpIndex !== -1 ? args[cpIndex + 2] : "?";
+        console.log("");
+        console.log("=== Аргументы запуска ===");
+        console.log("Всего аргументов:     ", args.length);
+        console.log("Записей в classpath:  ", classPath.split(";").length);
+        console.log("mainClass:            ", mainClass);
+        console.log("Сохранено в:           last-launch-args.json");
 
-    console.log("");
-    console.log("=== Аргументы запуска ===");
-    console.log("Всего аргументов:     ", args.length);
-    console.log("Записей в classpath:  ", classPath.split(";").length);
-    console.log("mainClass:            ", mainClass);
-    console.log("Сохранено в:           last-launch-args.json");
+        if (DRY_RUN) {
+          console.log("Режим --dry-run: Java не запускаем.");
+          process.exit(0);
+        }
+      },
 
-    if (DRY_RUN) {
-      console.log("Режим --dry-run: Java не запускаем.");
-      process.exit(0);
+      onStarted: (pid) => console.log("Minecraft запущен, PID:", pid),
+
+      onClose: (code) => console.log("Игра завершилась. Код:", code),
     }
-  });
-
-  launcher.on("progress", (e) =>
-    console.log(`[progress] ${e.type}: ${e.task}/${e.total}`)
   );
-
-  launcher.on("download-status", (e) =>
-    console.log(`[download] ${e.type} ${e.name} ${e.current}/${e.total}`)
-  );
-
-  launcher.on("close", (code) => console.log("Игра завершилась. Код:", code));
-
-  console.log("Скачиваю файлы и запускаю Minecraft...");
-  const proc = await launcher.launch(opts);
-
-  if (!proc) {
-    throw new Error("MCLC не смог запустить процесс Java");
-  }
-
-  console.log("Minecraft запущен, PID:", proc.pid);
 }
 
 main().catch((err) => {
-  console.error("Ошибка запуска:", err);
+  console.error("Ошибка запуска:", err?.message ?? err);
   process.exit(1);
 });

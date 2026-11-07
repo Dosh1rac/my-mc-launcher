@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>my-mc-launcher</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="logo">⛏</div>
+          <div>
+            <div class="brand-name">my-mc-launcher</div>
+            <div class="brand-sub">0.4.0 · vanilla</div>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <button class="nav-item active" type="button">Играть</button>
+          <button class="nav-item" type="button" disabled>Версии</button>
+          <button class="nav-item" type="button" disabled>Моды</button>
+          <button class="nav-item" type="button" disabled>Настройки</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span class="dot"></span>
+          Java 21 · MCLC
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="header">
+          <h1>Minecraft: Java Edition</h1>
+          <p>Версия <strong>1.20.1</strong> · release</p>
+        </header>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Аккаунт</h2>
+            <label class="switch">
+              <input type="checkbox" id="offline" checked />
+              <span>Офлайн-режим</span>
+            </label>
+          </div>
+
+          <div class="field">
+            <label for="nickname">Ник</label>
+            <input id="nickname" type="text" value="Player" maxlength="16" />
+          </div>
+
+          <p class="hint" id="accountHint">
+            Офлайн-профиль подходит для одиночной игры и серверов с
+            <code>online-mode=false</code>.
+          </p>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Память</h2>
+            <span class="value" id="memValue">2 ГБ</span>
+          </div>
+          <input id="memory" type="range" min="1" max="8" step="1" value="2" />
+          <div class="range-marks">
+            <span>1 ГБ</span>
+            <span>8 ГБ</span>
+          </div>
+        </section>
+
+        <section class="play">
+          <button id="play" class="play-button" type="button">Играть</button>
+
+          <div class="status">
+            <div class="status-row">
+              <span id="statusText">Готов к запуску</span>
+              <span id="statusPercent"></span>
+            </div>
+            <div class="bar">
+              <div class="bar-fill" id="bar"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card auth hidden" id="authCard">
+          <h2>Вход в Microsoft</h2>
+          <p class="hint">
+            Откройте страницу, введите код и подтвердите вход. Пароль вводится
+            только на сайте Microsoft.
+          </p>
+          <div class="auth-row">
+            <button class="link" id="authLink" type="button">
+              microsoft.com/link
+            </button>
+            <button class="code" id="authCode" type="button" title="Скопировать">
+              ---------
+            </button>
+          </div>
+        </section>
+
+        <section class="card log-card">
+          <div class="card-head">
+            <h2>Лог</h2>
+            <button class="ghost" id="clearLog" type="button">Очистить</button>
+          </div>
+          <pre id="log" class="log"></pre>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./renderer.ts"></script>
+  </body>
+</html>

@@ -2,11 +2,16 @@
   "name": "my-mc-launcher",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "./out/main/index.js",
   "scripts": {
     "start": "tsx index.ts",
+    "start:offline": "tsx index.ts --offline",
+    "login": "tsx login.ts",
     "dry": "tsx index.ts --dry-run",
     "analyze": "tsx analyze.ts",
+    "gui": "electron-vite dev",
+    "gui:build": "electron-vite build",
+    "gui:start": "electron-vite preview",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,6 +20,8 @@
   "type": "commonjs",
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "electron": "^45.2.3",
+    "electron-vite": "^6.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
