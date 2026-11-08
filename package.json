@@ -15,7 +15,7 @@
     "release:assets": "node scripts/prepare-release.mjs",
     "site:serve": "vite site --host 127.0.0.1 --port 4174",
     "site:build": "vite build site --outDir site-dist --emptyOutDir --base=./",
-    "dist:win": "npm run gui:build && electron-builder --win nsis portable --x64",
+    "dist:win": "npm run gui:build && electron-builder --win nsis portable --x64 --publish never",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
