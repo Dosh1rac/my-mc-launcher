@@ -5,6 +5,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { arch, cpus, freemem, platform, totalmem } from "node:os";
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
+import { autoUpdater } from "electron-updater";
 import { launch, type LaunchOptions } from "../core";
 import { getSettings, updateSettings, type Settings } from "./settings";
 import {
@@ -182,6 +183,10 @@ ipcMain.handle("pack:import", async () => {
   } catch (error) { return { ok: false, error: (error as Error).message }; }
 });
 ipcMain.handle("content:installed", (_event, kind, world) => installedContent(getSettings().gameDir, kind, world));
+ipcMain.handle("content:toggle", async (_event, kind, world, id, enabled) => {
+  await toggleContent(getSettings().gameDir, kind, world, id, enabled);
+  return { ok: true };
+});
 ipcMain.handle("content:install", async (_event, kind, project, world) => {
   const s = getSettings();
   return installContent(s.gameDir, kind, project, s.version, s.loaderType, world);
@@ -410,3 +415,22 @@ app.whenReady().then(() => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
+
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on("update-available", () => {
+  send("launcher:log", "Найдено обновление, скачиваю...");
+});
+
+autoUpdater.on("update-downloaded", () => {
+  send("launcher:log", "Обновление скачано. Оно установится при следующем запуске.");
+});
+
+app.whenReady().then(() => {
+  if (!app.isPackaged) return;
+  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    send("launcher:log", `[update] Проверка обновления не удалась: ${(error as Error).message}`);
+  });
+});
+

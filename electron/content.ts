@@ -35,14 +35,35 @@ export async function installedContent(root: string, kind: Kind, world?: string)
   let records: Record<string, { kind: string; world?: string; path: string }>;
   try { records = JSON.parse(await readFile(join(root, ".void-content.json"), "utf8")); }
   catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; throw error; }
-  const result: string[] = [];
+  const result: Array<{ id: string; enabled: boolean }> = [];
   for (const [id, record] of Object.entries(records)) {
     if (record.kind !== kind || (kind === "datapack" && record.world !== world)) continue;
     if (!record.path || basename(record.path) !== record.path) continue;
     const folder = kind === "datapack" ? join(root, "saves", world!, "datapacks") : join(root, { mod: "mods", shader: "shaderpacks", resourcepack: "resourcepacks" }[kind]);
-    try { if ((await stat(join(folder, record.path))).isFile()) result.push(id); } catch { /* removed */ }
+    try { if ((await stat(join(folder, record.path))).isFile()) result.push({ id, enabled: !record.path.endsWith(".disabled") }); } catch { /* removed */ }
   }
   return result;
+}
+
+export async function toggleContent(root: string, kind: Kind, world: string, id: string, enabled: boolean) {
+  const manifest = join(root, ".void-content.json");
+  let records: Record<string, { kind: string; world?: string; path: string }> = {};
+  try { records = JSON.parse(await readFile(manifest, "utf8")); } catch { return; }
+  const record = records[id];
+  if (!record || record.kind !== kind || (kind === "datapack" && record.world !== world)) return;
+  const folder = kind === "datapack" ? join(root, "saves", world!, "datapacks") : join(root, { mod: "mods", shader: "shaderpacks", resourcepack: "resourcepacks" }[kind]);
+  const currentPath = join(folder, record.path);
+  const targetPath = enabled
+    ? join(folder, record.path.replace(/\.disabled$/, ""))
+    : join(folder, record.path.endsWith(".disabled") ? record.path : record.path + ".disabled");
+  if (record.path !== basename(targetPath)) {
+    try {
+      await copyFile(currentPath, targetPath);
+      await rm(currentPath);
+      record.path = basename(targetPath);
+      await writeFile(manifest, JSON.stringify(records, null, 2), "utf8");
+    } catch { /* ignored */ }
+  }
 }
 
 export async function listWorlds(root: string) {

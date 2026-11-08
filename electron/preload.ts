@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld("launcher", {
   installContent: (type: string, project: string, world?: string) => ipcRenderer.invoke("content:install", type, project, world),
   listWorlds: () => ipcRenderer.invoke("content:worlds"),
   installedContent: (type: string, world?: string) => ipcRenderer.invoke("content:installed", type, world),
+  toggleContent: (type: string, world: string, id: string, enabled: boolean) => ipcRenderer.invoke("content:toggle", type, world, id, enabled),
   pickFolder: () => ipcRenderer.invoke("dialog:pick-folder"),
   openPath: (path: string) => ipcRenderer.invoke("shell:open-path", path),
 

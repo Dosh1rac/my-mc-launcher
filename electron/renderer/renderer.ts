@@ -94,7 +94,8 @@ interface LauncherApi {
   installedVersions(): Promise<Array<{ id: string; version: string; loaderType: LoaderType; loaderVersion: string }>>;
   installContent(type: string, project: string, world?: string): Promise<{ name: string; dependencies: number }>;
   listWorlds(): Promise<string[]>;
-  installedContent(type: string, world?: string): Promise<string[]>;
+  installedContent(type: string, world?: string): Promise<Array<{ id: string; enabled: boolean }>>;
+  toggleContent(type: string, world: string, id: string, enabled: boolean): Promise<void>;
   pickFolder(): Promise<string | null>;
   openPath(path: string): Promise<{ ok: boolean; error?: string }>;
 
@@ -200,7 +201,7 @@ const THEME_SUBS: Record<Theme, string> = {
   pink: "rose nebula",
 };
 
-let appVersion = "1.2.1";
+let appVersion = "1.3.0";
 
 const brandSub = $<HTMLElement>("brandSub");
 
@@ -686,11 +687,12 @@ async function searchCatalog() {
   contentResults.replaceChildren();
   catalogStatus.textContent = "Поиск в Modrinth...";
   try {
-    const [page, installed] = await Promise.all([
+    const [page, installedRows] = await Promise.all([
       window.launcher.searchContent(type, $<HTMLInputElement>("contentQuery").value.trim(), catalogOffset),
       window.launcher.installedContent(type, contentWorld.value),
     ]);
     if (request !== catalogRequest) return;
+    const installed = new Map(installedRows.map(row => [row.id, row.enabled]));
     catalogTotal = page.total;
     $("catalogPage").textContent = `Страница ${Math.floor(catalogOffset / 30) + 1} из ${Math.max(1, Math.ceil(catalogTotal / 30))}`;
     ($("catalogPrev") as HTMLButtonElement).disabled = catalogOffset === 0;
@@ -707,17 +709,37 @@ async function searchCatalog() {
       const meta = document.createElement("p"); meta.className = "hint"; meta.textContent = `↓ ${project.downloads.toLocaleString("ru-RU")} · ${(project.categories ?? []).slice(0, 4).join(" · ")}`;
       info.append(title, author, description, meta);
       const button = document.createElement("button"); button.className = "ghost"; button.textContent = "Установить";
-      if (installed.includes(project.id)) { button.classList.add("installed"); button.textContent = "✓ Установлено"; button.disabled = true; }
+      const syncButton = () => {
+        const state = installed.get(project.id);
+        button.classList.remove("installed", "off");
+        if (state === undefined) { button.textContent = "Установить"; button.disabled = false; return; }
+        button.disabled = false;
+        if (state) { button.classList.add("installed"); button.textContent = "✓ Включён"; }
+        else { button.classList.add("off"); button.textContent = "✗ Отключён"; }
+      };
+      syncButton();
       button.addEventListener("click", async () => {
         button.disabled = true;
+        const state = installed.get(project.id);
+        if (state === undefined) {
+          try {
+            if (type === "datapack" && !contentWorld.value) throw new Error("Сначала выбери мир");
+            catalogStatus.textContent = `Скачивание: ${project.title}...`;
+            const result = await window.launcher.installContent(type, project.id, contentWorld.value);
+            catalogStatus.textContent = `Установлен файл ${result.name}.` + (result.dependencies ? ` Требуется зависимостей: ${result.dependencies}; установи их отдельно на странице проекта Modrinth.` : "");
+            installed.set(project.id, true);
+            syncButton();
+          } catch (error) { catalogStatus.textContent = `Ошибка: ${(error as Error).message}`; button.disabled = false; }
+          return;
+        }
         try {
-          if (type === "datapack" && !contentWorld.value) throw new Error("Сначала выбери мир");
-          catalogStatus.textContent = `Скачивание: ${project.title}...`;
-          const result = await window.launcher.installContent(type, project.id, contentWorld.value);
-          catalogStatus.textContent = `Установлен файл ${result.name}.` + (result.dependencies ? ` Требуется зависимостей: ${result.dependencies}; установи их отдельно на странице проекта Modrinth.` : "");
-          button.textContent = "Установлено";
-          button.classList.add("installed");
-        } catch (error) { catalogStatus.textContent = `Ошибка: ${(error as Error).message}`; button.disabled = false; }
+          const next = !state;
+          await window.launcher.toggleContent(type, contentWorld.value, project.id, next);
+          installed.set(project.id, next);
+          syncButton();
+          catalogStatus.textContent = next ? `${project.title}: включён.` : `${project.title}: отключён (файл переименован в .disabled).`;
+        } catch (error) { catalogStatus.textContent = `Ошибка: ${(error as Error).message}`; }
+        button.disabled = false;
       });
       row.append(icon, info, button); contentResults.append(row);
     }
