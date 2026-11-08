@@ -201,7 +201,7 @@ const THEME_SUBS: Record<Theme, string> = {
   pink: "rose nebula",
 };
 
-let appVersion = "1.3.0";
+let appVersion = "1.3.1";
 
 const brandSub = $<HTMLElement>("brandSub");
 

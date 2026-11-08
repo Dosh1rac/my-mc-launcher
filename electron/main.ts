@@ -14,7 +14,7 @@ import {
   type DownloadProgress,
 } from "./downloader";
 import { installLoader, installedLoaderId, listLoaderVersions, type LoaderType } from "./loaders";
-import { searchContent, installContent, installedContent, listWorlds } from "./content";
+import { searchContent, installContent, installedContent, listWorlds, toggleContent } from "./content";
 import { importPack } from "./pack-import";
 import { installJava } from "./java";
 
