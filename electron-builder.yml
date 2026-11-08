@@ -1,0 +1,20 @@
+appId: club.voidlauncher.app
+productName: VOID
+directories:
+  output: dist
+files:
+  - out/**
+  - package.json
+win:
+  icon: assets/void.ico
+  target:
+    - nsis
+    - portable
+  signExecutable: false
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  artifactName: VOID-Setup-${version}.${ext}
+portable:
+  artifactName: VOID-Portable-${version}.${ext}

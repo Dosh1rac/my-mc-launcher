@@ -1,9 +1,17 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>my-mc-launcher</title>
+    <title>VOID</title>
+    <script>
+      try {
+        const saved = localStorage.getItem("theme");
+        if (saved === "light" || saved === "pink" || saved === "dark") {
+          document.documentElement.dataset.theme = saved;
+        }
+      } catch {}
+    </script>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -13,100 +21,358 @@
     <div class="app">
       <aside class="sidebar">
         <div class="brand">
-          <div class="logo">✦</div>
+          <div class="logo"><img src="./void.png" alt="VOID" /></div>
           <div>
-            <div class="brand-name">my-mc-launcher</div>
-            <div class="brand-sub">0.6.0 · deep space</div>
+            <div class="brand-name">VOID</div>
+            <div class="brand-sub" id="brandSub">0.7.0 · deep space</div>
           </div>
         </div>
 
         <nav class="nav">
-          <button class="nav-item active" type="button">Играть</button>
-          <button class="nav-item" type="button" disabled>Версии</button>
-          <button class="nav-item" type="button" disabled>Моды</button>
-          <button class="nav-item" type="button" disabled>Настройки</button>
+          <button class="nav-item active" type="button" data-nav="play">
+            Играть
+          </button>
+          <button class="nav-item" type="button" data-nav="versions">
+            Версии
+          </button>
+          <button class="nav-item" type="button" data-nav="content">Моды и контент</button>
+          <button class="nav-item" type="button" data-nav="settings">
+            Настройки
+          </button>
         </nav>
 
         <div class="sidebar-footer">
           <span class="dot"></span>
-          Java 21 · MCLC
+          <span id="sidebarStatus">Java 21 · MCLC</span>
         </div>
       </aside>
 
-      <main class="content">
-        <header class="header">
-          <h1>Minecraft: Java Edition</h1>
-          <p>Версия <strong>1.20.1</strong> · release</p>
-        </header>
+      <main class="content" id="content">
+        <!-- ================= ИГРАТЬ ================= -->
+        <section class="view active" data-view="play">
+          <header class="page-head">
+            <h1>Minecraft: Java Edition</h1>
+            <p>
+              Версия <strong id="headerVersion">1.20.1</strong> · release
+            </p>
+          </header>
 
-        <section class="card">
-          <div class="card-head">
-            <h2>Аккаунт</h2>
-            <label class="switch">
-              <input type="checkbox" id="offline" checked />
-              <span>Офлайн-режим</span>
-            </label>
-          </div>
-
-          <div class="field">
-            <label for="nickname">Ник</label>
-            <input id="nickname" type="text" value="Player" maxlength="16" />
-          </div>
-
-          <p class="hint" id="accountHint">
-            Офлайн-профиль подходит для одиночной игры и серверов с
-            <code>online-mode=false</code>.
-          </p>
-        </section>
-
-        <section class="card">
-          <div class="card-head">
-            <h2>Память</h2>
-            <span class="value" id="memValue">2 ГБ</span>
-          </div>
-          <input id="memory" type="range" min="1" max="8" step="1" value="2" />
-          <div class="range-marks">
-            <span>1 ГБ</span>
-            <span>8 ГБ</span>
-          </div>
-        </section>
-
-        <section class="play">
-          <button id="play" class="play-button" type="button">Играть</button>
-
-          <div class="status">
-            <div class="status-row">
-              <span id="statusText">Готов к запуску</span>
-              <span id="statusPercent"></span>
+          <section class="card">
+            <div class="card-head">
+              <h2>Аккаунт</h2>
+              <label class="switch">
+                <input type="checkbox" id="offline" checked />
+                <span>Офлайн-режим</span>
+              </label>
             </div>
-            <div class="bar">
-              <div class="bar-fill" id="bar"></div>
-            </div>
-          </div>
-        </section>
 
-        <section class="card auth hidden" id="authCard">
-          <h2>Вход в Microsoft</h2>
-          <p class="hint">
-            Откройте страницу, введите код и подтвердите вход. Пароль вводится
-            только на сайте Microsoft.
-          </p>
-          <div class="auth-row">
-            <button class="link" id="authLink" type="button">
-              microsoft.com/link
-            </button>
-            <button class="code" id="authCode" type="button" title="Скопировать">
-              ---------
+            <div class="field">
+              <label for="nickname">Ник</label>
+              <input id="nickname" type="text" value="Player" maxlength="16" />
+            </div>
+
+            <p class="hint" id="accountHint">
+              Офлайн-профиль подходит для одиночной игры и серверов с
+              <code>online-mode=false</code>.
+            </p>
+          </section>
+
+          <section class="card">
+            <div class="card-head"><h2>Установленная версия</h2><button id="refreshInstalled" class="ghost" type="button">Обновить</button></div>
+            <div class="loader-select-row"><label for="profileSelect">Сборка</label><select id="profileSelect"><option value="">Текущая папка</option></select></div>
+            <div class="download-actions"><input id="profileName" type="text" maxlength="100" placeholder="Название сборки" /><button id="saveProfile" class="ghost" type="button">Сохранить текущую сборку</button></div>
+            <div class="loader-select-row"><label for="installedVersion">Версия игры</label><select id="installedVersion"><option value="">Поиск установленных версий...</option></select></div>
+            <p class="hint" id="installedHint">Версии из выбранной папки игры.</p>
+            <div class="download-actions"><button id="importPack" class="ghost" type="button">Импорт сборки .mrpack / .zip</button></div>
+            <p class="hint" id="packStatus">Сборка импортируется в отдельную папку; текущие файлы не затрагиваются.</p>
+          </section>
+
+          <div class="meta-row">
+            <span class="chip">
+              <span class="chip-label">Версия</span>
+              <strong id="versionChip">1.20.1</strong>
+            </span>
+            <span class="chip">
+              <span class="chip-label">Память</span>
+              <strong id="memoryChip">4 ГБ</strong>
+            </span>
+            <button class="chip chip-action" type="button" data-nav="settings">
+              Изменить
             </button>
           </div>
+
+          <section class="play">
+            <button id="play" class="play-button" type="button">Играть</button>
+
+            <div class="status">
+              <div class="status-row">
+                <span id="statusText">Готов к запуску</span>
+                <span id="statusPercent"></span>
+              </div>
+              <div class="bar">
+                <div class="bar-fill" id="bar"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card auth hidden" id="authCard">
+            <h2>Вход в Microsoft</h2>
+            <p class="hint">
+              Откройте страницу, введите код и подтвердите вход. Пароль
+              вводится только на сайте Microsoft.
+            </p>
+            <div class="auth-row">
+              <button class="link" id="authLink" type="button">
+                microsoft.com/link
+              </button>
+              <button
+                class="code"
+                id="authCode"
+                type="button"
+                title="Скопировать"
+              >
+                ---------
+              </button>
+            </div>
+          </section>
+
+          <section class="card log-card">
+            <div class="card-head">
+              <h2>Лог</h2>
+              <button class="ghost" id="clearLog" type="button">Очистить</button>
+            </div>
+            <pre id="log" class="log"></pre>
+          </section>
         </section>
 
-        <section class="card log-card">
-          <div class="card-head">
-            <h2>Лог</h2>
-            <button class="ghost" id="clearLog" type="button">Очистить</button>
-          </div>
-          <pre id="log" class="log"></pre>
+        <!-- ================= ВЕРСИИ ================= -->
+        <section class="view" data-view="versions">
+          <header class="page-head">
+            <h1>Версии</h1>
+            <p>Выберите версию, скачайте её и запускайте без лишних окон.</p>
+          </header>
+
+          <section class="card versions-card">
+            <div class="card-head">
+              <h2>Список версий</h2>
+              <label class="switch">
+                <input type="checkbox" id="showSnapshots" />
+                <span>Снапшоты</span>
+              </label>
+            </div>
+
+            <input
+              id="versionSearch"
+              type="text"
+              placeholder="Поиск: 1.20.1, 1.21, snapshot..."
+              autocomplete="off"
+            />
+
+            <div class="version-list-head">
+              <span id="versionsCount" class="value">—</span>
+              <span class="muted-small">Кликните по версии, чтобы выбрать</span>
+            </div>
+
+            <div id="versionList" class="version-list">
+              <div class="empty-state">Загрузка списка версий...</div>
+            </div>
+          </section>
+
+          <section class="card download-card">
+            <div class="card-head">
+              <h2>Загрузчик</h2>
+              <span class="value" id="selectedVersion">1.20.1</span>
+            </div>
+
+            <div class="loader-select-row">
+              <label for="loaderType">Загрузчик</label>
+              <select id="loaderType">
+                <option value="vanilla">Vanilla</option>
+                <option value="fabric">Fabric</option>
+                <option value="forge">Forge</option>
+                <option value="neoforge">NeoForge</option>
+              </select>
+            </div>
+            <p class="hint" id="loaderHint">Выберите версию игры, затем загрузчик.</p>
+            <div class="loader-select-row hidden" id="loaderVersionRow">
+              <label for="loaderVersion">Версия загрузчика</label>
+              <select id="loaderVersion"></select>
+            </div>
+            <p class="hint" id="downloadHint">
+              Скачиваются версия, библиотеки и ассеты. Уже загруженные файлы
+              пропускаются.
+            </p>
+
+            <div class="download-actions">
+              <button id="downloadBtn" class="primary" type="button">
+                Скачать
+              </button>
+              <button
+                id="cancelDownloadBtn"
+                class="ghost hidden"
+                type="button"
+              >
+                Отмена
+              </button>
+              <button id="openGameFolder" class="ghost" type="button">
+                Открыть папку
+              </button>
+            </div>
+
+            <div class="status download-status">
+              <div class="status-row">
+                <span id="dlStatus">Готово к загрузке</span>
+                <span id="dlPercent"></span>
+              </div>
+              <div class="bar">
+                <div class="bar-fill" id="dlBar"></div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view="content">
+          <header class="page-head">
+            <h1>Моды и контент</h1>
+            <p>Поиск и установка из Modrinth для выбранной версии игры.</p>
+          </header>
+          <details class="card catalog-panel" open>
+            <summary>Каталог Modrinth <span>Поиск и установка ▾</span></summary>
+            <div class="loader-select-row">
+              <select id="contentType" aria-label="Тип контента"><option value="mod">Моды</option><option value="shader">Шейдеры</option><option value="resourcepack">Ресурспаки</option><option value="datapack">Датапаки</option></select>
+              <input id="contentQuery" type="text" placeholder="Название или ключевые слова" />
+              <button id="contentSearch" class="primary" type="button">Найти</button>
+            </div>
+            <div id="worldRow" class="loader-select-row hidden"><label for="contentWorld">Мир для датапака</label><select id="contentWorld"></select></div>
+            <p class="hint" id="catalogStatus">Выбери тип и нажми «Найти».</p>
+            <div id="contentResults" class="version-list"></div>
+            <div class="download-actions"><button id="catalogPrev" class="ghost" type="button">← Назад</button><span id="catalogPage" class="hint"></span><button id="catalogNext" class="ghost" type="button">Далее →</button></div>
+            <p class="hint">Обязательные зависимости автоматически не устанавливаются. Для шейдеров нужен Iris или OptiFine.</p>
+          </details>
+          <section class="card">
+            <div class="card-head"><h2>Добавить файлы</h2></div>
+            <p class="hint">Выбери уже скачанные файлы. VOID скопирует их в папку игры и не перезапишет существующие.</p>
+            <div class="download-actions">
+              <button class="primary" type="button" data-import="mod">Моды · .jar</button>
+              <button class="ghost" type="button" data-import="shader">Шейдеры · .zip</button>
+              <button class="ghost" type="button" data-import="resourcepack">Ресурспаки · .zip</button>
+            </div>
+            <p class="hint" id="contentStatus">Моды должны подходить к версии Minecraft и установленному загрузчику. Шейдерам обычно нужен Iris или OptiFine.</p>
+          </section>
+        </section>
+
+        <!-- ================= НАСТРОЙКИ ================= -->
+        <section class="view" data-view="settings">
+          <header class="page-head">
+            <h1>Настройки</h1>
+            <p>Тема, папка игры и память. Всё сохраняется автоматически.</p>
+          </header>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Тема</h2>
+              <span class="value" id="themeValue">Тёмная</span>
+            </div>
+
+            <div class="theme-grid">
+              <button
+                class="theme-option active"
+                type="button"
+                data-theme-pick="dark"
+              >
+                <span class="theme-swatch theme-swatch-dark"></span>
+                <span class="theme-name">Тёмная</span>
+                <span class="theme-sub">deep space</span>
+                <span class="theme-check">✓</span>
+              </button>
+
+              <button
+                class="theme-option"
+                type="button"
+                data-theme-pick="light"
+              >
+                <span class="theme-swatch theme-swatch-light"></span>
+                <span class="theme-name">Светлая</span>
+                <span class="theme-sub">lavender sky</span>
+                <span class="theme-check">✓</span>
+              </button>
+
+              <button
+                class="theme-option"
+                type="button"
+                data-theme-pick="pink"
+              >
+                <span class="theme-swatch theme-swatch-pink"></span>
+                <span class="theme-name">Розовая</span>
+                <span class="theme-sub">rose nebula</span>
+                <span class="theme-check">✓</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Папка игры</h2>
+            </div>
+
+            <div class="folder-row">
+              <code class="folder-path" id="gameDir">—</code>
+              <button id="pickFolder" class="ghost" type="button">
+                Выбрать
+              </button>
+            </div>
+
+            <p class="hint">
+              Сюда скачиваются версии, библиотеки и ассеты. Смена папки не
+              удаляет старые файлы.
+            </p>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Память</h2>
+              <span class="value" id="memValueSettings">4 ГБ</span>
+            </div>
+
+            <input
+              id="memorySettings"
+              type="range"
+              min="1"
+              max="8"
+              step="1"
+              value="4"
+            />
+
+            <div class="range-marks">
+              <span id="memMin">1 ГБ</span>
+              <span id="memMax">8 ГБ</span>
+            </div>
+
+            <p class="hint" id="ramHint">
+              Сколько ОЗУ выделять игре. Можно выбрать любой объём в пределах
+              доступной памяти.
+            </p>
+          </section>
+
+          <section class="card">
+            <div class="card-head">
+              <h2>Система</h2>
+            </div>
+            <p class="hint" id="systemInfo">—</p>
+            <p class="hint" id="javaInfo">Проверка Java...</p>
+            <button id="refreshJava" class="ghost" type="button">Проверить Java</button>
+            <button id="pickJava" class="ghost" type="button">Выбрать java.exe</button>
+            <button id="resetJava" class="ghost" type="button">Использовать системную</button>
+            <button id="downloadJava" class="ghost" type="button">Скачать Java</button>
+            <div class="loader-select-row"><label for="javaVersion">Автоустановка Java</label><select id="javaVersion"><option value="21">Java 21</option><option value="17">Java 17</option><option value="8">Java 8</option><option value="25">Java 25</option></select><button id="installJava" class="primary" type="button">Установить</button></div>
+            <p class="hint" id="javaInstallStatus">Java скачивается от Eclipse Adoptium в отдельную папку VOID. Системная Java не изменяется.</p>
+            <p class="hint">Выбранная Java применяется к запуску Minecraft и установке Forge / NeoForge. Загрузку Java откроем на официальном сайте Eclipse Adoptium.</p>
+            <div class="download-actions">
+              <button id="resetSettings" class="ghost" type="button">
+                Сбросить оформление и параметры
+              </button>
+            </div>
+          </section>
         </section>
       </main>
     </div>

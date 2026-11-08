@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#08040f" />
+    <meta name="description" content="VOID — космический лаунчер Minecraft. Сборки, моды и настройки в одном месте." />
+    <title>VOID — Minecraft Launcher</title>
+    <link rel="icon" href="./void.png" type="image/png" />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./space.css" />
+  </head>
+  <body>
+    <canvas id="void-space" aria-hidden="true"></canvas>
+    <div class="space-vignette" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="brand" href="#top"><img src="./void.png" alt="" /><span>VOID</span></a>
+      <nav><a href="#features">Возможности</a><a href="#download">Скачать</a><a href="#faq">FAQ</a></nav>
+      <a class="nav-download" href="#download">Скачать лаунчер <span>↗</span></a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="eyebrow"><i></i> MINECRAFT · JAVA EDITION</div>
+          <h1>Твоя игра.<br /><em>Твоя вселенная.</em></h1>
+          <p class="lead">Собирай свои миры, выбирай версии и находи контент — всё в одном космическом лаунчере.</p>
+          <div class="hero-actions"><a class="button primary" href="#download">Скачать для Windows <span>↓</span></a><a class="button secondary" href="#features">Исследовать VOID</a></div>
+          <p class="fine">Windows 10/11 · x64 · Бесплатно</p>
+        </div>
+        <div class="hero-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="planet"><img src="./void.png" alt="VOID — космический символ" /></div><span class="spark s1">✦</span><span class="spark s2">✧</span><span class="spark s3">✦</span><div class="art-caption"><b>VOID</b><span>MINECRAFT LAUNCHER</span></div></div>
+        <div class="hero-bottom"><span>01 / ТВОЙ СЛЕДУЮЩИЙ МИР</span><span>ПРОКРУТИ, ЧТОБЫ УЗНАТЬ БОЛЬШЕ ↓</span></div>
+      </section>
+
+      <section class="features section" id="features">
+        <div class="section-head"><div><div class="eyebrow">ОДНА ТОЧКА ВХОДА</div><h2>Меньше возни.<br /><em>Больше Minecraft.</em></h2></div><p>VOID помогает держать версии и контент в порядке, чтобы ты быстрее попадал в игру.</p></div>
+        <div class="feature-grid">
+          <article class="feature-card tall"><span class="number">01</span><div class="feature-icon">◉</div><h3>Сборки отдельно</h3><p>Создавай профили игры и переключайся между версиями и конфигурациями.</p><div class="mini-lines"><i></i><i></i><i></i></div></article>
+          <article class="feature-card"><span class="number">02</span><div class="feature-icon">✳</div><h3>Каталог Modrinth</h3><p>Ищи моды, шейдеры и ресурспаки из лаунчера.</p></article>
+          <article class="feature-card"><span class="number">03</span><div class="feature-icon">⌘</div><h3>Версии и загрузчики</h3><p>Выбирай Minecraft и загружай профили Fabric, Forge и NeoForge.</p></article>
+          <article class="feature-card wide"><span class="number">04</span><div><h3>Твой VOID</h3><p>Космический интерфейс, несколько тем и настройки памяти под твой компьютер.</p></div><div class="color-dots"><i></i><i></i><i></i></div></article>
+        </div>
+      </section>
+
+      <section class="download section" id="download">
+        <div class="download-panel"><div class="download-glow"></div><div class="eyebrow">ТВОЯ СЛЕДУЮЩАЯ ИГРА НАЧИНАЕТСЯ ЗДЕСЬ</div><h2>Готов нырнуть<br /><em>в VOID?</em></h2><p>Выбирай установщик или portable-версию. Для запуска Minecraft понадобится Java; её можно установить через настройки лаунчера.</p><div class="download-actions"><a class="button primary" id="setupLink" href="./downloads/VOID-Setup-1.2.0.exe" download>Установщик <span>↓</span></a><a class="button secondary" id="portableLink" href="./downloads/VOID-Portable-1.2.0.exe" download>Portable EXE <span>↓</span></a></div><div class="download-meta"><span>VERSION <b>1.2.0</b></span><span>WINDOWS 10/11 · X64</span><span>БЕЗ ЦИФРОВОЙ ПОДПИСИ</span></div><p class="download-note">Windows может показать предупреждение SmartScreen: приложение пока не подписано сертификатом.</p></div>
+      </section>
+
+      <section class="faq section" id="faq"><div class="eyebrow">ПЕРЕД СТАРТОМ</div><h2>Частые вопросы</h2><details><summary>VOID бесплатный?</summary><p>Да. Для игры на серверах с проверкой аккаунта потребуется лицензия Minecraft и поддерживаемый вход Microsoft.</p></details><details><summary>Нужна ли Java?</summary><p>Для запуска Minecraft нужна совместимая Java. Её можно выбрать вручную или установить в настройках VOID.</p></details><details><summary>Можно ли импортировать сборки?</summary><p>В лаунчере предусмотрен импорт .mrpack и .zip. Совместимость конкретных сборок и загрузчиков может зависеть от их содержимого.</p></details><details><summary>Это официальный лаунчер Mojang?</summary><p>Нет. VOID — независимый проект и не связан с Mojang или Microsoft.</p></details></section>
+    </main>
+    <footer><a class="brand" href="#top"><img src="./void.png" alt="" /><span>VOID</span></a><span>Независимый Minecraft Launcher</span><a href="#top">НАВЕРХ ↑</a></footer>
+    <script type="module" src="./site.js"></script>
+  </body>
+</html>

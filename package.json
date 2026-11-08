@@ -1,7 +1,7 @@
 {
   "name": "my-mc-launcher",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.2.0",
+  "description": "VOID Minecraft Launcher",
   "main": "./out/main/index.js",
   "scripts": {
     "start": "tsx index.ts",
@@ -12,6 +12,9 @@
     "gui": "electron-vite dev",
     "gui:build": "electron-vite build",
     "gui:start": "electron-vite preview",
+    "site:serve": "vite site --host 127.0.0.1 --port 4174",
+    "site:build": "vite build site --outDir site-dist --emptyOutDir --base=./",
+    "dist:win": "npm run gui:build && electron-builder --win nsis portable --x64",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -21,12 +24,14 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "minecraft-launcher-core": "^3.18.2"
+    "minecraft-launcher-core": "^3.18.2",
+    "yauzl": "^3.4.0"
   }
 }

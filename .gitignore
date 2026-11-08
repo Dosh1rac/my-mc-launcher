@@ -3,6 +3,12 @@ node_modules/
 .minecraft/
 
 dist/
+dist-retry/
+dist-*/
+site/site-dist/
+# Собранные EXE слишком большие для git/GitHub Pages — кладутся локально
+site/downloads/*
+!site/downloads/README.md
 build/
 out/
 *.tsbuildinfo
