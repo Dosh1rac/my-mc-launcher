@@ -73,6 +73,9 @@ npm run login
 | `npm start:offline` | CLI: запуск с офлайн-профилем |
 | `npm run dry` | Собирает аргументы, сохраняет в `last-launch-args.json` и выходит **без запуска Java** |
 | `npm run analyze` | Печатает разбор `version.json`: библиотеки, правила, ассеты, шаблоны аргументов |
+| `npm run site:serve` | Локальный просмотр сайта: http://localhost:4174 |
+| `npm run site:build` | Сборка сайта в `site/site-dist/` |
+| `npm run release:assets` | Готовит EXE для релиза с постоянными именами и SHA-256 |
 
 ## Структура проекта
 
@@ -205,6 +208,13 @@ javaPath: "C:\\Program Files\\Eclipse Adoptium\\jdk-21\\bin\\javaw.exe",
 - `last-launch-args.json` содержит `accessToken`. После реального входа это настоящий токен.
 - Не коммитьте `.env`, `auth/`, `tokens.json`.
 - Пароль Microsoft лаунчер не видит: он вводится только на сайте Microsoft.
+
+## Сайт и релизы
+
+- Сайт лежит в `site/`, публикуется на GitHub Pages через `.github/workflows/pages.yml`.
+- Релиз собирается автоматически по тегу `vX.Y.Z`: `.github/workflows/release.yml` создаёт GitHub Release с `VOID-Setup.exe`, `VOID-Portable.exe` и `SHA256SUMS.txt`.
+- Сайт скачивает файлы с `releases/latest/download/...`, поэтому версию в HTML править не нужно.
+- Подробная инструкция: [RELEASING.md](RELEASING.md).
 
 ## Лицензия
 

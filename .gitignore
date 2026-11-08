@@ -9,6 +9,8 @@ site/site-dist/
 # Собранные EXE слишком большие для git/GitHub Pages — кладутся локально
 site/downloads/*
 !site/downloads/README.md
+# подготовленные файлы релиза (копии EXE с постоянными именами)
+release/
 build/
 out/
 *.tsbuildinfo

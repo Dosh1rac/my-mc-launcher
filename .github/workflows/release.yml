@@ -1,0 +1,59 @@
+name: Release
+
+# Запускается при отправке тега вида v1.2.0.
+# Собирает установщик и portable, создаёт GitHub Release
+# с постоянными именами файлов, на которые ссылается сайт.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Код
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Проверить, что тег совпадает с версией
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ("v$version" -ne "${{ github.ref_name }}") {
+            throw "Тег ${{ github.ref_name }} не совпадает с версией в package.json (v$version). Поднимите версию и создайте тег заново."
+          }
+          Write-Host "Версия $version — ок"
+
+      - name: Зависимости
+        run: npm ci
+
+      - name: Собрать EXE
+        run: npm run dist:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Подготовить файлы релиза
+        run: npm run release:assets
+
+      - name: Опубликовать релиз
+        uses: softprops/action-gh-release@v2
+        with:
+          name: VOID ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release/VOID-Setup.exe
+            release/VOID-Portable.exe
+            release/SHA256SUMS.txt

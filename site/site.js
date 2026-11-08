@@ -1,7 +1,56 @@
-// Site version is kept in sync with package.json when preparing a release.
+import { REPO, FALLBACK_VERSION } from "./config.js";
+
 document.querySelectorAll('a[href="#download"]').forEach((link) => {
   link.addEventListener("click", () => document.querySelector("#download")?.scrollIntoView({ behavior: "smooth" }));
 });
+
+// ── Скачивание ──────────────────────────────────────────────────────────
+// Ссылки ведут на постоянные адреса последнего релиза:
+//   /releases/latest/download/VOID-Setup.exe
+// Поэтому сайт не нужно править при каждом обновлении версии.
+const setupLink = document.querySelector("#setupLink");
+const portableLink = document.querySelector("#portableLink");
+const releasesLink = document.querySelector("#allReleases");
+const versionNodes = document.querySelectorAll(".js-version");
+
+const repo = String(REPO ?? "").trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\/+$/, "");
+const releasesPage = repo ? `https://github.com/${repo}/releases` : "./downloads/README.md";
+const localFile = (kind) => `./downloads/VOID-${kind}-${FALLBACK_VERSION}.exe`;
+
+function setLink(link, url) {
+  if (!link || !url) return;
+  link.href = url;
+  // GitHub сам отдаёт файл как вложение; для внешних ссылок download игнорируется.
+  link.removeAttribute("download");
+}
+
+if (releasesLink) releasesLink.href = releasesPage;
+setLink(setupLink, repo ? `${releasesPage}/latest/download/VOID-Setup.exe` : localFile("Setup"));
+setLink(portableLink, repo ? `${releasesPage}/latest/download/VOID-Portable.exe` : localFile("Portable"));
+
+async function loadLatestRelease() {
+  if (!repo) return;
+  try {
+    const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!response.ok) return;
+    const release = await response.json();
+    const version = String(release.tag_name ?? "").replace(/^v/, "");
+    if (version) versionNodes.forEach((node) => { node.textContent = version; });
+
+    // Если имена файлов в релизе отличаются — берём реальные адреса.
+    const assets = Array.isArray(release.assets) ? release.assets : [];
+    const find = (pattern) => assets.find((asset) => pattern.test(String(asset.name)))?.browser_download_url;
+    setLink(setupLink, find(/^VOID-Setup.*\.exe$/i));
+    setLink(portableLink, find(/^VOID-Portable.*\.exe$/i));
+  } catch {
+    // Нет сети или API недоступен — остаются ссылки на latest/download.
+  }
+}
+
+void loadLatestRelease();
+// ────────────────────────────────────────────────────────────────────────
 
 const canvas = document.querySelector("#void-space");
 const ctx = canvas?.getContext("2d", { alpha: false });
