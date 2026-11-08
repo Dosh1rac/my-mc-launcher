@@ -21,19 +21,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "build": {
-    "appId": "com.void.launcher",
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "Dosh1rac",
-        "repo": "my-mc-launcher"
-      }
-    ],
-    "win": {
-      "target": "nsis"
-    }
-  },
   "type": "commonjs",
   "devDependencies": {
     "@types/node": "^26.6.6",
