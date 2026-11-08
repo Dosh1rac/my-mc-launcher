@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld("launcher", {
   updateSettings: (patch: unknown) =>
     ipcRenderer.invoke("settings:update", patch),
   getVersion: () => ipcRenderer.invoke("app:version"),
+  getUpdateState: () => ipcRenderer.invoke("update:state"),
+  installUpdate: () => ipcRenderer.invoke("update:install"),
   getSystemInfo: () => ipcRenderer.invoke("system:info"),
   getJavaInfo: () => ipcRenderer.invoke("system:java"),
   pickJava: () => ipcRenderer.invoke("system:java-pick"),
@@ -61,6 +63,9 @@ contextBridge.exposeInMainWorld("launcher", {
   onDeviceCode: (
     cb: (info: { verificationUri: string; userCode: string }) => void
   ) => on("launcher:device-code", cb),
+  onUpdateState: (
+    cb: (info: { status: string; version?: string; percent?: number }) => void
+  ) => on("update:state", cb),
   onVersionProgress: (
     cb: (info: {
       phase: string;

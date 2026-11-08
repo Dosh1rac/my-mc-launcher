@@ -416,21 +416,63 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
+/* ---------- Автообновление ---------- */
+
+// Portable-сборка не может заменить собственный EXE — обновление через сайт.
+const isPortable = Boolean(process.env.PORTABLE_EXECUTABLE_DIR);
+
+let updateState: {
+  status: "idle" | "checking" | "downloading" | "downloaded" | "not-supported";
+  version?: string;
+  percent?: number;
+} = { status: "idle" };
+
+function setUpdateState(patch: Partial<typeof updateState>) {
+  updateState = { ...updateState, ...patch };
+  send("update:state", updateState);
+}
+
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
-autoUpdater.on("update-available", () => {
-  send("launcher:log", "Найдено обновление, скачиваю...");
+autoUpdater.on("update-available", (info) => {
+  send("launcher:log", `Найдено обновление ${info.version}, скачиваю...`);
+  setUpdateState({ status: "downloading", version: info.version, percent: 0 });
 });
 
-autoUpdater.on("update-downloaded", () => {
-  send("launcher:log", "Обновление скачано. Оно установится при следующем запуске.");
+autoUpdater.on("download-progress", (progress) => {
+  setUpdateState({ percent: Math.round(progress.percent) });
+});
+
+autoUpdater.on("update-downloaded", (info) => {
+  send("launcher:log", `Обновление ${info.version} скачано. Установится при выходе или нажми «Перезапустить».`);
+  setUpdateState({ status: "downloaded", version: info.version, percent: 100 });
+});
+
+autoUpdater.on("error", (error) => {
+  // Нет сети или GitHub недоступен — не критично, тихо в лог.
+  send("launcher:log", `[update] ${(error as Error).message}`);
+  setUpdateState({ status: "idle" });
+});
+
+ipcMain.handle("update:state", () => updateState);
+ipcMain.handle("update:install", () => {
+  if (updateState.status !== "downloaded") return { ok: false };
+  autoUpdater.quitAndInstall(false, true);
+  return { ok: true };
 });
 
 app.whenReady().then(() => {
-  if (!app.isPackaged) return;
-  autoUpdater.checkForUpdatesAndNotify().catch((error) => {
-    send("launcher:log", `[update] Проверка обновления не удалась: ${(error as Error).message}`);
+  createWindow();
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
+  if (app.isPackaged && !isPortable) {
+    autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+      send("launcher:log", `[update] Проверка обновления не удалась: ${(error as Error).message}`);
+    });
+  }
 });
 

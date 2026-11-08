@@ -68,6 +68,9 @@ interface LauncherApi {
   getSettings(): Promise<Settings>;
   updateSettings(patch: Partial<Settings>): Promise<Settings>;
   getVersion(): Promise<string>;
+  getUpdateState(): Promise<{ status: string; version?: string; percent?: number }>;
+  installUpdate(): Promise<{ ok: boolean }>;
+  onUpdateState(cb: (info: { status: string; version?: string; percent?: number }) => void): () => void;
   getSystemInfo(): Promise<SystemInfo>;
   getJavaInfo(): Promise<{ ok: boolean; text: string }>;
   pickJava(): Promise<{ path: string; text: string } | null>;
@@ -201,9 +204,34 @@ const THEME_SUBS: Record<Theme, string> = {
   pink: "rose nebula",
 };
 
-let appVersion = "1.3.1";
+let appVersion = "1.4.0";
 
 const brandSub = $<HTMLElement>("brandSub");
+
+/* ---------- Индикатор обновления ---------- */
+
+const updateBadge = $<HTMLButtonElement>("updateBadge");
+let updateInstallReady = false;
+
+function renderUpdateState(state: { status: string; version?: string; percent?: number }) {
+  updateInstallReady = false;
+  updateBadge.classList.add("hidden");
+  if (state.status === "downloading" && state.version) {
+    updateBadge.textContent = `⟳ ${state.version} · ${state.percent ?? 0}%`;
+    updateBadge.classList.remove("hidden");
+  } else if (state.status === "downloaded" && state.version) {
+    updateBadge.textContent = `✓ ${state.version} готова — перезапустить`;
+    updateBadge.classList.remove("hidden");
+    updateInstallReady = true;
+  }
+}
+
+updateBadge.addEventListener("click", () => {
+  if (updateInstallReady) void window.launcher.installUpdate();
+});
+
+window.launcher.onUpdateState(renderUpdateState);
+void window.launcher.getUpdateState().then(renderUpdateState).catch(() => {});
 
 /* ---------- Тема ---------- */
 
