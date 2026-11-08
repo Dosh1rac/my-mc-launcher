@@ -68,7 +68,10 @@ jobs:
           name: VOID ${{ github.ref_name }}
           generate_release_notes: true
           fail_on_unmatched_files: true
+# Релиз публикует softprops/action-gh-release; latest.yml нужен
+# electron-updater для автообновления, поэтому добавлен в files.
           files: |
             release/VOID-Setup.exe
             release/VOID-Portable.exe
             release/SHA256SUMS.txt
+            dist/latest.yml
