@@ -9,13 +9,14 @@
     <link rel="icon" href="./void.png" type="image/png" />
     <link rel="stylesheet" href="./style.css" />
     <link rel="stylesheet" href="./space.css" />
+    <link rel="stylesheet" href="./showcase.css" />
   </head>
   <body>
     <canvas id="void-space" aria-hidden="true"></canvas>
     <div class="space-vignette" aria-hidden="true"></div>
     <header class="topbar">
       <a class="brand" href="#top"><img src="./void.png" alt="" /><span>VOID</span></a>
-      <nav><a href="#features">Возможности</a><a href="#download">Скачать</a><a href="#faq">FAQ</a></nav>
+      <nav><a href="#features">Возможности</a><a href="#showcase">Интерфейс</a><a href="#download">Скачать</a><a href="#faq">FAQ</a></nav>
       <a class="nav-download" href="#download">Скачать лаунчер <span>↗</span></a>
     </header>
 
@@ -42,8 +43,46 @@
         </div>
       </section>
 
+      <section class="showcase section" id="showcase">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">ИНТЕРФЕЙС</div>
+            <h2>Так выглядит<br /><em>VOID.</em></h2>
+          </div>
+          <p>Тёмная, светлая и розовая темы, космический фон и всё нужное на одном экране. Переключай вкладки и смотри.</p>
+        </div>
+
+        <div class="showcase-frame">
+          <div class="showcase-tabs" role="tablist" aria-label="Экраны лаунчера">
+            <button class="active" type="button" role="tab" aria-selected="true" data-shot="./img/play-dark.jpg" data-alt="Экран «Играть»: профили, версия и запуск">Играть</button>
+            <button type="button" role="tab" aria-selected="false" data-shot="./img/versions-dark.jpg" data-alt="Экран «Версии»: список версий Minecraft и загрузчики">Версии</button>
+            <button type="button" role="tab" aria-selected="false" data-shot="./img/content-dark.jpg" data-alt="Экран «Моды и контент»: каталог Modrinth">Моды и контент</button>
+            <button type="button" role="tab" aria-selected="false" data-shot="./img/settings-dark.jpg" data-alt="Экран «Настройки»: темы, память, Java">Настройки</button>
+          </div>
+          <figure class="showcase-screen">
+            <img id="shotImage" src="./img/play-dark.jpg" width="1160" height="760" alt="Экран «Играть»: профили, версия и запуск" fetchpriority="high" decoding="async" />
+          </figure>
+        </div>
+
+        <div class="theme-grid" aria-label="Три темы VOID">
+          <figure class="theme-card">
+            <img src="./img/play-dark.jpg" width="1160" height="760" alt="Тёмная тема VOID" loading="lazy" decoding="async" />
+            <figcaption><b>Тёмная</b><span>deep space</span></figcaption>
+          </figure>
+          <figure class="theme-card">
+            <img src="./img/play-light.jpg" width="1160" height="760" alt="Светлая тема VOID" loading="lazy" decoding="async" />
+            <figcaption><b>Светлая</b><span>lavender sky</span></figcaption>
+          </figure>
+          <figure class="theme-card">
+            <img src="./img/play-pink.jpg" width="1160" height="760" alt="Розовая тема VOID" loading="lazy" decoding="async" />
+            <figcaption><b>Розовая</b><span>rose nebula</span></figcaption>
+          </figure>
+        </div>
+        <p class="showcase-note">Скриншоты настоящего интерфейса. Ник, сборки и каталог — демонстрационные.</p>
+      </section>
+
       <section class="download section" id="download">
-        <div class="download-panel"><div class="download-glow"></div><div class="eyebrow">ТВОЯ СЛЕДУЮЩАЯ ИГРА НАЧИНАЕТСЯ ЗДЕСЬ</div><h2>Готов нырнуть<br /><em>в VOID?</em></h2><p>Выбирай установщик или portable-версию. Для запуска Minecraft понадобится Java; её можно установить через настройки лаунчера.</p><div class="download-actions"><a class="button primary" id="setupLink" href="./downloads/VOID-Setup-1.2.0.exe" download>Установщик <span>↓</span></a><a class="button secondary" id="portableLink" href="./downloads/VOID-Portable-1.2.0.exe" download>Portable EXE <span>↓</span></a></div><div class="download-meta"><span>VERSION <b class="js-version">1.2.0</b></span><span>WINDOWS 10/11 · X64</span><span>БЕЗ ЦИФРОВОЙ ПОДПИСИ</span><a id="allReleases" href="https://github.com/Dosh1rac/my-mc-launcher/releases" target="_blank" rel="noopener">ВСЕ ВЕРСИИ ↗</a></div><p class="download-note">Файлы скачиваются с GitHub Releases. Windows может показать предупреждение SmartScreen: приложение пока не подписано сертификатом.</p></div>
+        <div class="download-panel"><div class="download-glow"></div><div class="eyebrow">ТВОЯ СЛЕДУЮЩАЯ ИГРА НАЧИНАЕТСЯ ЗДЕСЬ</div><h2>Готов нырнуть<br /><em>в VOID?</em></h2><p>Выбирай установщик или portable-версию. Для запуска Minecraft понадобится Java; её можно установить через настройки лаунчера.</p><div class="download-actions"><a class="button primary" id="setupLink" href="./downloads/VOID-Setup-1.2.1.exe" download>Установщик <span>↓</span></a><a class="button secondary" id="portableLink" href="./downloads/VOID-Portable-1.2.1.exe" download>Portable EXE <span>↓</span></a></div><div class="download-meta"><span>VERSION <b class="js-version">1.2.1</b></span><span>WINDOWS 10/11 · X64</span><span>БЕЗ ЦИФРОВОЙ ПОДПИСИ</span><a id="allReleases" href="https://github.com/Dosh1rac/my-mc-launcher/releases" target="_blank" rel="noopener">ВСЕ ВЕРСИИ ↗</a></div><p class="download-note">Файлы скачиваются с GitHub Releases. Windows может показать предупреждение SmartScreen: приложение пока не подписано сертификатом.</p></div>
       </section>
 
       <section class="faq section" id="faq"><div class="eyebrow">ПЕРЕД СТАРТОМ</div><h2>Частые вопросы</h2><details><summary>VOID бесплатный?</summary><p>Да. Для игры на серверах с проверкой аккаунта потребуется лицензия Minecraft и поддерживаемый вход Microsoft.</p></details><details><summary>Нужна ли Java?</summary><p>Для запуска Minecraft нужна совместимая Java. Её можно выбрать вручную или установить в настройках VOID.</p></details><details><summary>Можно ли импортировать сборки?</summary><p>В лаунчере предусмотрен импорт .mrpack и .zip. Совместимость конкретных сборок и загрузчиков может зависеть от их содержимого.</p></details><details><summary>Это официальный лаунчер Mojang?</summary><p>Нет. VOID — независимый проект и не связан с Mojang или Microsoft.</p></details></section>

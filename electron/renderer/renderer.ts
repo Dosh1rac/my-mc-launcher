@@ -67,6 +67,7 @@ interface LauncherApi {
 
   getSettings(): Promise<Settings>;
   updateSettings(patch: Partial<Settings>): Promise<Settings>;
+  getVersion(): Promise<string>;
   getSystemInfo(): Promise<SystemInfo>;
   getJavaInfo(): Promise<{ ok: boolean; text: string }>;
   pickJava(): Promise<{ path: string; text: string } | null>;
@@ -194,10 +195,12 @@ const THEME_NAMES: Record<Theme, string> = {
 };
 
 const THEME_SUBS: Record<Theme, string> = {
-  dark: "0.7.0 · deep space",
-  light: "0.7.0 · lavender sky",
-  pink: "0.7.0 · rose nebula",
+  dark: "deep space",
+  light: "lavender sky",
+  pink: "rose nebula",
 };
+
+let appVersion = "1.2.1";
 
 const brandSub = $<HTMLElement>("brandSub");
 
@@ -213,7 +216,7 @@ function applyTheme(theme: Theme) {
   }
 
   themeValue.textContent = THEME_NAMES[next];
-  brandSub.textContent = THEME_SUBS[next];
+  brandSub.textContent = `${appVersion} · ${THEME_SUBS[next]}`;
   document
     .querySelectorAll<HTMLButtonElement>("[data-theme-pick]")
     .forEach((button) =>
@@ -1004,6 +1007,12 @@ async function bootstrap() {
     settings = await window.launcher.getSettings();
   } catch (error) {
     appendLog(`[error] Настройки: ${(error as Error).message ?? error}`);
+  }
+
+  try {
+    appVersion = await window.launcher.getVersion();
+  } catch {
+    // остаётся версия из сборки
   }
 
   try {

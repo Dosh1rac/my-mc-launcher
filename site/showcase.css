@@ -1,0 +1,148 @@
+/* Галерея интерфейса на лендинге */
+.showcase {
+  padding-top: 20px;
+}
+
+.showcase-frame {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid rgba(234, 205, 255, 0.16);
+  border-radius: 24px;
+  background: linear-gradient(150deg, rgba(40, 22, 58, 0.85), rgba(10, 6, 16, 0.94));
+  box-shadow: 0 40px 90px -45px rgba(168, 85, 247, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.showcase-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 2px 4px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.showcase-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.showcase-tabs button {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border-radius: 99px;
+  padding: 9px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.18s, background 0.18s;
+}
+
+.showcase-tabs button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.showcase-tabs button.active {
+  color: #1a0d20;
+  background: linear-gradient(110deg, #f2b8f4, #c084fc);
+  box-shadow: 0 6px 20px rgba(192, 132, 252, 0.3);
+}
+
+.showcase-screen {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #05030a;
+  aspect-ratio: 1160 / 760;
+}
+
+.showcase-screen img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.theme-card {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0d0815;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.theme-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(240, 155, 238, 0.45);
+}
+
+.theme-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1160 / 760;
+  object-fit: cover;
+  object-position: top left;
+}
+
+.theme-card figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 13px;
+}
+
+.theme-card figcaption b {
+  font-size: 12px;
+}
+
+.theme-card figcaption span {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.showcase-note {
+  margin: 14px 0 0;
+  color: #7d7089;
+  font-size: 10px;
+}
+
+@media (max-width: 700px) {
+  .showcase-frame {
+    padding: 7px;
+    border-radius: 18px;
+  }
+
+  .showcase-tabs button {
+    font-size: 10px;
+    padding: 8px 12px;
+  }
+
+  .theme-grid {
+    gap: 8px;
+  }
+
+  .theme-card figcaption {
+    display: block;
+    padding: 8px;
+  }
+
+  .theme-card figcaption span {
+    display: none;
+  }
+}

@@ -52,6 +52,34 @@ async function loadLatestRelease() {
 void loadLatestRelease();
 // ────────────────────────────────────────────────────────────────────────
 
+// ── Галерея интерфейса ──────────────────────────────────────────────────
+const shotImage = document.querySelector("#shotImage");
+const shotTabs = Array.from(document.querySelectorAll("[data-shot]"));
+
+shotTabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    shotTabs.forEach((item) => {
+      const active = item === tab;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-selected", String(active));
+    });
+    if (shotImage) {
+      shotImage.src = tab.dataset.shot;
+      shotImage.alt = tab.dataset.alt ?? "";
+    }
+  });
+});
+
+// Остальные экраны догружаем после загрузки страницы, чтобы вкладки
+// переключались без белой вспышки.
+addEventListener("load", () => {
+  shotTabs.slice(1).forEach((tab) => {
+    const preload = new Image();
+    preload.src = tab.dataset.shot;
+  });
+}, { once: true });
+// ────────────────────────────────────────────────────────────────────────
+
 const canvas = document.querySelector("#void-space");
 const ctx = canvas?.getContext("2d", { alpha: false });
 if (canvas && ctx) {

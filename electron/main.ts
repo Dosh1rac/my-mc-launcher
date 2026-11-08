@@ -61,6 +61,7 @@ function send(channel: string, payload: unknown) {
 }
 
 ipcMain.handle("settings:get", () => getSettings());
+ipcMain.handle("app:version", () => app.getVersion());
 
 ipcMain.handle(
   "settings:update",

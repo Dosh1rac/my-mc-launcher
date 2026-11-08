@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld("launcher", {
   getSettings: () => ipcRenderer.invoke("settings:get"),
   updateSettings: (patch: unknown) =>
     ipcRenderer.invoke("settings:update", patch),
+  getVersion: () => ipcRenderer.invoke("app:version"),
   getSystemInfo: () => ipcRenderer.invoke("system:info"),
   getJavaInfo: () => ipcRenderer.invoke("system:java"),
   pickJava: () => ipcRenderer.invoke("system:java-pick"),
