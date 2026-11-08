@@ -24,7 +24,7 @@
           <div class="logo"><img src="./void.png" alt="VOID" /></div>
           <div>
             <div class="brand-name">VOID</div>
-            <div class="brand-sub" id="brandSub">1.4.0 · deep space</div>
+            <div class="brand-sub" id="brandSub">1.4.1 · deep space</div>
             <button class="update-badge hidden" id="updateBadge" type="button"></button>
           </div>
         </div>
@@ -368,6 +368,9 @@
             <div class="loader-select-row"><label for="javaVersion">Автоустановка Java</label><select id="javaVersion"><option value="21">Java 21</option><option value="17">Java 17</option><option value="8">Java 8</option><option value="25">Java 25</option></select><button id="installJava" class="primary" type="button">Установить</button></div>
             <p class="hint" id="javaInstallStatus">Java скачивается от Eclipse Adoptium в отдельную папку VOID. Системная Java не изменяется.</p>
             <p class="hint">Выбранная Java применяется к запуску Minecraft и установке Forge / NeoForge. Загрузку Java откроем на официальном сайте Eclipse Adoptium.</p>
+            <div class="card-head" style="margin-top:14px"><h2>Обновления</h2></div>
+            <p class="hint" id="updateInfo">VOID проверяет обновления автоматически при запуске.</p>
+            <button id="checkUpdate" class="ghost" type="button">Проверить обновления сейчас</button>
             <div class="download-actions">
               <button id="resetSettings" class="ghost" type="button">
                 Сбросить оформление и параметры

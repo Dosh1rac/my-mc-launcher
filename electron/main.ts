@@ -422,9 +422,10 @@ app.on("window-all-closed", () => {
 const isPortable = Boolean(process.env.PORTABLE_EXECUTABLE_DIR);
 
 let updateState: {
-  status: "idle" | "checking" | "downloading" | "downloaded" | "not-supported";
+  status: "idle" | "checking" | "downloading" | "downloaded" | "latest" | "error";
   version?: string;
   percent?: number;
+  message?: string;
 } = { status: "idle" };
 
 function setUpdateState(patch: Partial<typeof updateState>) {
@@ -434,6 +435,8 @@ function setUpdateState(patch: Partial<typeof updateState>) {
 
 autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
+
+autoUpdater.on("checking-for-update", () => setUpdateState({ status: "checking" }));
 
 autoUpdater.on("update-available", (info) => {
   send("launcher:log", `Найдено обновление ${info.version}, скачиваю...`);
@@ -449,10 +452,14 @@ autoUpdater.on("update-downloaded", (info) => {
   setUpdateState({ status: "downloaded", version: info.version, percent: 100 });
 });
 
+autoUpdater.on("update-not-available", () => {
+  setUpdateState({ status: "latest", message: "У тебя последняя версия VOID." });
+});
+
 autoUpdater.on("error", (error) => {
   // Нет сети или GitHub недоступен — не критично, тихо в лог.
   send("launcher:log", `[update] ${(error as Error).message}`);
-  setUpdateState({ status: "idle" });
+  setUpdateState({ status: "error", message: (error as Error).message });
 });
 
 ipcMain.handle("update:state", () => updateState);
@@ -460,6 +467,14 @@ ipcMain.handle("update:install", () => {
   if (updateState.status !== "downloaded") return { ok: false };
   autoUpdater.quitAndInstall(false, true);
   return { ok: true };
+});
+ipcMain.handle("update:check", async () => {
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    send("launcher:log", `[update] ${(error as Error).message}`);
+  }
+  return updateState;
 });
 
 app.whenReady().then(() => {

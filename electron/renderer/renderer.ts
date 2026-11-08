@@ -68,9 +68,10 @@ interface LauncherApi {
   getSettings(): Promise<Settings>;
   updateSettings(patch: Partial<Settings>): Promise<Settings>;
   getVersion(): Promise<string>;
-  getUpdateState(): Promise<{ status: string; version?: string; percent?: number }>;
+  getUpdateState(): Promise<{ status: string; version?: string; percent?: number; message?: string }>;
   installUpdate(): Promise<{ ok: boolean }>;
-  onUpdateState(cb: (info: { status: string; version?: string; percent?: number }) => void): () => void;
+  checkForUpdates(): Promise<unknown>;
+  onUpdateState(cb: (info: { status: string; version?: string; percent?: number; message?: string }) => void): () => void;
   getSystemInfo(): Promise<SystemInfo>;
   getJavaInfo(): Promise<{ ok: boolean; text: string }>;
   pickJava(): Promise<{ path: string; text: string } | null>;
@@ -204,30 +205,56 @@ const THEME_SUBS: Record<Theme, string> = {
   pink: "rose nebula",
 };
 
-let appVersion = "1.4.0";
+let appVersion = "1.4.1";
 
 const brandSub = $<HTMLElement>("brandSub");
 
 /* ---------- Индикатор обновления ---------- */
 
 const updateBadge = $<HTMLButtonElement>("updateBadge");
+const updateInfo = $<HTMLElement>("updateInfo");
+const checkUpdateBtn = $<HTMLButtonElement>("checkUpdate");
 let updateInstallReady = false;
 
-function renderUpdateState(state: { status: string; version?: string; percent?: number }) {
+const UPDATE_TEXTS: Record<string, string> = {
+  checking: "Проверяю обновления...",
+  latest: "У тебя последняя версия VOID.",
+  error: "Не удалось проверить обновления. Проверь интернет или попробуй позже.",
+};
+
+function renderUpdateState(state: { status: string; version?: string; percent?: number; message?: string }) {
   updateInstallReady = false;
   updateBadge.classList.add("hidden");
+  if (state.status === "checking") {
+    updateInfo.textContent = UPDATE_TEXTS.checking;
+    return;
+  }
   if (state.status === "downloading" && state.version) {
     updateBadge.textContent = `⟳ ${state.version} · ${state.percent ?? 0}%`;
     updateBadge.classList.remove("hidden");
-  } else if (state.status === "downloaded" && state.version) {
+    updateInfo.textContent = `Обновление ${state.version} скачивается...`;
+    return;
+  }
+  if (state.status === "downloaded" && state.version) {
     updateBadge.textContent = `✓ ${state.version} готова — перезапустить`;
     updateBadge.classList.remove("hidden");
     updateInstallReady = true;
+    updateInfo.textContent = `Обновление ${state.version} готово. Можно перезапустить сразу — установка займёт несколько секунд.`;
+    return;
+  }
+  if (state.status === "latest" || state.status === "error") {
+    updateInfo.textContent = UPDATE_TEXTS[state.status];
   }
 }
 
 updateBadge.addEventListener("click", () => {
   if (updateInstallReady) void window.launcher.installUpdate();
+});
+
+checkUpdateBtn.addEventListener("click", async () => {
+  checkUpdateBtn.disabled = true;
+  try { await window.launcher.checkForUpdates(); }
+  finally { checkUpdateBtn.disabled = false; }
 });
 
 window.launcher.onUpdateState(renderUpdateState);
