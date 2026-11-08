@@ -33,15 +33,17 @@ https://github.com/Dosh1rac/my-mc-launcher/releases/latest/download/VOID-Portabl
 
 Репозиторий указан в одном месте — `site/config.js` (`REPO`).
 
-## Один раз: включить GitHub Pages
+## GitHub Pages
+
+Pages уже включён: **Settings → Pages → Source = GitHub Actions**.
+Сайт живёт по адресу **https://dosh1rac.github.io/my-mc-launcher/**.
+
+Если когда-нибудь Pages отключат или репозиторий переедет:
 
 1. GitHub → репозиторий → **Settings** → **Pages**.
 2. **Build and deployment** → **Source** → **GitHub Actions**.
-3. Больше ничего выбирать не нужно: workflow `.github/workflows/pages.yml`
-   сам собирает `site/` и публикует его.
-
-Сайт будет по адресу `https://dosh1rac.github.io/my-mc-launcher/`.
-Первый деплой произойдёт после пуша в `main`, который затрагивает `site/`.
+3. Запустить workflow **Deploy site** (вкладка Actions → Run workflow)
+   или просто запушить изменение в `site/`.
 
 ## Выпуск новой версии
 

@@ -1,5 +1,7 @@
 # my-mc-launcher
 
+**Сайт:** https://dosh1rac.github.io/my-mc-launcher/ · **Скачать:** [Releases](https://github.com/Dosh1rac/my-mc-launcher/releases)
+
 Учебный консольный лаунчер Minecraft на Node.js + TypeScript. Скачивает файлы игры, авторизует через Microsoft, собирает команду запуска Java и запускает ванильный клиент.
 
 Проект сделан как пошаговое пособие: от «что вообще происходит при запуске» до собственного GUI и модов.
