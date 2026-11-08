@@ -39,10 +39,25 @@ jobs:
       - name: Зависимости
         run: npm ci
 
+      # GitHub Releases иногда отдаёт 504 при скачивании бинарников
+      # electron-builder (winCodeSign, NSIS). Зеркало npmmirror решает это,
+      # а retry даёт запас на краткие сбои сети.
       - name: Собрать EXE
-        run: npm run dist:win
+        shell: pwsh
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+        run: |
+          $ok = $false
+          foreach ($i in 1..3) {
+            Write-Host "Попытка сборки $i из 3"
+            npm run dist:win
+            if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+            Write-Host "Сборка не удалась, пауза 20 секунд..."
+            Start-Sleep -Seconds 20
+          }
+          if (-not $ok) { throw "Сборка EXE не удалась после 3 попыток" }
 
       - name: Подготовить файлы релиза
         run: npm run release:assets
