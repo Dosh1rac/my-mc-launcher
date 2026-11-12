@@ -1083,9 +1083,17 @@ signInBtn.addEventListener("click", async () => {
 
   if (!result.ok) {
     authCard.classList.add("hidden");
-    appendLog(`[auth] ${result.error ?? "не удалось войти"}`);
-    setStatus(result.error ?? "Вход не выполнен", 0, true);
+    const message = result.error ?? "не удалось войти";
+    appendLog(`[auth] ${message}`);
+    setStatus("Вход не выполнен", 0, true);
     renderAccount();
+
+    if (/Invalid app registration|не принял client ID/i.test(message)) {
+      accountSub.textContent = "Mojang ещё не применил allowlist";
+      accountHint.innerHTML =
+        "Приложение VOID одобрено, но Minecraft Services пока отвечает «Invalid app registration». " +
+        "Обычно allowlist применяется с задержкой. Попробуй «Войти» позже — код вводить не придётся.";
+    }
     return;
   }
 
