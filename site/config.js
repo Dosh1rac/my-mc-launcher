@@ -6,4 +6,4 @@ export const REPO = "Dosh1rac/my-mc-launcher";
 
 // Версия, которая показывается до того, как сайт получит данные
 // о последнем релизе с GitHub API.
-export const FALLBACK_VERSION = "1.5.0";
+export const FALLBACK_VERSION = "1.5.1";
