@@ -27,6 +27,23 @@ let win: BrowserWindow | null = null;
 let downloadController: AbortController | null = null;
 let installingJava = false;
 
+// Второй запуск EXE не должен открывать второе окно: фокусируем уже открытое.
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (!win || win.isDestroyed()) {
+      createWindow();
+      return;
+    }
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+  });
+}
+
 function createWindow() {
   const theme = getSettings().theme;
   const backgroundColor =
@@ -462,18 +479,6 @@ ipcMain.handle("launcher:open-external", async (_event, url: string) => {
   }
 });
 
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
-
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit();
-});
-
 /* ---------- Автообновление ---------- */
 
 // Portable-сборка не может заменить собственный EXE — обновление через сайт.
@@ -535,7 +540,13 @@ ipcMain.handle("update:check", async () => {
   return updateState;
 });
 
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
+
 app.whenReady().then(() => {
+  if (!hasSingleInstanceLock) return;
+
   createWindow();
 
   app.on("activate", () => {
