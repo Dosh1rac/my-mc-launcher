@@ -9,6 +9,7 @@ interface Settings {
   gameDir: string;
   memoryGb: number;
   showSnapshots: boolean;
+  offlineMode: boolean;
   loaderType: LoaderType;
   loaderVersion: string;
   javaPath: string;
@@ -109,8 +110,16 @@ interface LauncherApi {
   onStarted(cb: (pid: number | undefined) => void): () => void;
   onClose(cb: (code: number | null) => void): () => void;
   onDeviceCode(cb: (info: DeviceCode) => void): () => void;
+  getAuthState(): Promise<AuthState>;
+  signIn(): Promise<{ ok: boolean; error?: string } & Partial<Exclude<AuthState, { signedIn: false }>>>;
+  signOut(): Promise<{ ok: boolean }>;
+  onAuthState(cb: (state: AuthState) => void): () => void;
   onVersionProgress(cb: (info: DownloadProgress) => void): () => void;
 }
+
+type AuthState =
+  | { signedIn: false }
+  | { signedIn: true; name: string; uuid: string };
 
 declare global {
   interface Window {
@@ -140,6 +149,13 @@ const authCard = $<HTMLElement>("authCard");
 const authLink = $<HTMLButtonElement>("authLink");
 const authCode = $<HTMLButtonElement>("authCode");
 const accountHint = $<HTMLParagraphElement>("accountHint");
+const accountName = $<HTMLElement>("accountName");
+const accountSub = $<HTMLElement>("accountSub");
+const accountAvatarText = $<HTMLElement>("accountAvatarText");
+const accountAvatarImg = $<HTMLImageElement>("accountAvatarImg");
+const signInBtn = $<HTMLButtonElement>("signIn");
+const signOutBtn = $<HTMLButtonElement>("signOut");
+const nicknameField = $<HTMLElement>("nicknameField");
 
 const headerVersion = $<HTMLElement>("headerVersion");
 const versionChip = $<HTMLElement>("versionChip");
@@ -205,7 +221,7 @@ const THEME_SUBS: Record<Theme, string> = {
   pink: "rose nebula",
 };
 
-let appVersion = "1.4.1";
+let appVersion = "1.5.0";
 
 const brandSub = $<HTMLElement>("brandSub");
 
@@ -384,9 +400,10 @@ function setupMemory() {
 
 function syncSettingsUI() {
   applyTheme(settings.theme);
-  gameDirEl.textContent = settings.gameDir || "—";
+  gameDirEl.textContent = settings.gameDir || "-";
   gameDirEl.title = settings.gameDir;
   showSnapshots.checked = settings.showSnapshots;
+  offlineEl.checked = settings.offlineMode;
   setupMemory();
 }
 
@@ -980,19 +997,116 @@ document.querySelectorAll<HTMLElement>("[data-nav]").forEach((button) => {
 
 /* ---------- Аккаунт и запуск ---------- */
 
+let authState: AuthState = { signedIn: false };
+
+function setAvatar(letter: string, uuid?: string) {
+  accountAvatarText.textContent = letter || "?";
+  accountAvatarText.classList.remove("hidden");
+  accountAvatarImg.classList.add("hidden");
+  if (!uuid) {
+    accountAvatarImg.removeAttribute("src");
+    return;
+  }
+  accountAvatarImg.onload = () => {
+    accountAvatarText.classList.add("hidden");
+    accountAvatarImg.classList.remove("hidden");
+  };
+  accountAvatarImg.onerror = () => {
+    accountAvatarText.classList.remove("hidden");
+    accountAvatarImg.classList.add("hidden");
+  };
+  accountAvatarImg.src = `https://mc-heads.net/avatar/${uuid}/72`;
+}
+
+function renderAccount() {
+  const offline = offlineEl.checked;
+
+  nicknameField.classList.toggle("hidden", !offline);
+  signInBtn.classList.toggle("hidden", offline || authState.signedIn);
+  signOutBtn.classList.toggle("hidden", offline || !authState.signedIn);
+
+  if (offline) {
+    const nick = nicknameEl.value.trim() || "Player";
+    accountName.textContent = `Офлайн: ${nick}`;
+    accountSub.textContent = "Офлайн-профиль";
+    accountHint.innerHTML =
+      "Офлайн-профиль подходит для одиночной игры и серверов с <code>online-mode=false</code>.";
+    setAvatar(nick.charAt(0).toUpperCase());
+    return;
+  }
+
+  if (authState.signedIn) {
+    accountName.textContent = authState.name;
+    accountSub.textContent = "Microsoft · вход выполнен";
+    accountHint.innerHTML =
+      "Лицензионный вход активен: работают скины и серверы с <code>online-mode=true</code>.";
+    setAvatar(authState.name.charAt(0).toUpperCase(), authState.uuid);
+  } else {
+    accountName.textContent = "Гость";
+    accountSub.textContent = "Вход не выполнен";
+    accountHint.innerHTML =
+      "Нажмите «Войти» — откроется страница Microsoft с кодом. Пароль вводится только на сайте Microsoft.";
+    setAvatar("?");
+  }
+}
+
 function resetPlayButton() {
   playBtn.disabled = false;
   playBtn.textContent = "Играть";
 }
 
 function updateAccountHint() {
-  accountHint.innerHTML = offlineEl.checked
-    ? "Офлайн-профиль подходит для одиночной игры и серверов с <code>online-mode=false</code>."
-    : "Вход через Microsoft: откроется страница с кодом. Пароль вводится только на сайте Microsoft.";
-  nicknameEl.disabled = !offlineEl.checked;
+  renderAccount();
 }
 
-offlineEl.addEventListener("change", updateAccountHint);
+offlineEl.addEventListener("change", () => {
+  updateAccountHint();
+  persist({ offlineMode: offlineEl.checked });
+});
+
+nicknameEl.addEventListener("input", () => {
+  if (offlineEl.checked) renderAccount();
+});
+
+signInBtn.addEventListener("click", async () => {
+  if (signInBtn.disabled) return;
+  signInBtn.disabled = true;
+  signInBtn.textContent = "Ожидание...";
+  authCard.classList.remove("hidden");
+  authCode.textContent = "---------";
+  setStatus("Ожидание входа в Microsoft...", 0);
+
+  const result = await window.launcher.signIn();
+
+  signInBtn.disabled = false;
+  signInBtn.textContent = "Войти";
+
+  if (!result.ok) {
+    authCard.classList.add("hidden");
+    appendLog(`[auth] ${result.error ?? "не удалось войти"}`);
+    setStatus(result.error ?? "Вход не выполнен", 0, true);
+    renderAccount();
+    return;
+  }
+
+  authCard.classList.add("hidden");
+  authState = { signedIn: true, name: result.name ?? "", uuid: result.uuid ?? "" };
+  renderAccount();
+  setStatus(`Вход выполнен: ${result.name ?? ""}`);
+});
+
+signOutBtn.addEventListener("click", async () => {
+  await window.launcher.signOut();
+  authState = { signedIn: false };
+  renderAccount();
+  appendLog("Вы вышли из аккаунта Microsoft.");
+});
+
+window.launcher.onAuthState((state) => {
+  authState = state;
+  renderAccount();
+  if (state.signedIn) authCard.classList.add("hidden");
+});
 
 clearLogBtn.addEventListener("click", () => {
   logLines = [];
@@ -1058,6 +1172,7 @@ window.launcher.onDeviceCode(({ verificationUri, userCode }) => {
   authLink.textContent = verificationUri.replace(/^https?:\/\//, "");
   authCode.textContent = userCode;
   authCard.classList.remove("hidden");
+  authCard.scrollIntoView({ block: "nearest", behavior: "smooth" });
   setStatus("Ожидание входа в Microsoft...", 0);
 });
 
@@ -1103,6 +1218,13 @@ async function bootstrap() {
   syncSettingsUI();
   updateHeader();
   updateAccountHint();
+  void window.launcher
+    .getAuthState()
+    .then((state) => {
+      authState = state;
+      renderAccount();
+    })
+    .catch(() => {});
   void refreshInstalled();
   void refreshProfiles().catch(error => appendLog(`[error] Профили: ${error.message}`));
   void refreshJava();

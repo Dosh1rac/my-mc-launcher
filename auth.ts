@@ -2,6 +2,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { dirname } from "node:path";
@@ -23,6 +24,56 @@ const SCOPE = "XboxLive.signin offline_access";
 const DEVICE_CODE_URL = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/devicecode`;
 const TOKEN_URL = `https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/token`;
 const SESSION_PATH = "auth/session.json";
+
+// В GUI сессия лежит в userData (папка установки может быть только для чтения).
+function sessionPath(): string {
+  return process.env.VOID_SESSION_PATH?.trim() || SESSION_PATH;
+}
+
+// Токены Microsoft сохраняются отдельно и сразу после входа: если Minecraft
+// Services отклонит запрос, повторная попытка не потребует нового кода.
+interface PendingMs {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+}
+
+function pendingMsPath(): string {
+  return sessionPath().replace(/\.json$/i, ".ms.json");
+}
+
+export function loadPendingMs(): PendingMs | null {
+  const file = pendingMsPath();
+  if (!existsSync(file)) return null;
+  try {
+    return JSON.parse(readFileSync(file, "utf8")) as PendingMs;
+  } catch {
+    return null;
+  }
+}
+
+function savePendingMs(token: any) {
+  const file = pendingMsPath();
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(
+    file,
+    JSON.stringify(
+      {
+        access_token: token.access_token,
+        refresh_token: token.refresh_token,
+        expires_at: Date.now() + (token.expires_in ?? 3600) * 1000,
+      },
+      null,
+      2
+    ),
+    { mode: 0o600 }
+  );
+}
+
+export function clearPendingMs() {
+  const file = pendingMsPath();
+  if (existsSync(file)) unlinkSync(file);
+}
 
 export interface Session {
   client_id: string;
@@ -213,11 +264,12 @@ async function loginMinecraft(xstsToken: string, uhs: string) {
 
   if (res.status === 403) {
     const message = String(res.data?.errorMessage ?? "");
-    if (message.includes("Invalid app registration")) {
+    if (message.toLowerCase().includes("invalid app registration")) {
       throw new Error(
-        "Mojang ещё не одобрил ваш client ID (allowlist для сторонних лаунчеров).\n" +
-          "Заявка на одобрение: https://help.minecraft.net/hc/en-us/articles/16254801392141\n" +
-          "Пока одобрения нет, используйте офлайн-режим: npm start:offline"
+        "Minecraft Services не принял client ID приложения.\n" +
+          `Ответ сервера: ${JSON.stringify(res.data)}\n` +
+          "Если заявка на allowlist уже одобрена — проверь, что одобрен именно этот client ID " +
+          "и что прошло немного времени после одобрения."
       );
     }
   }
@@ -276,19 +328,74 @@ async function fullLogin(clientId: string, ms: any): Promise<Session> {
 }
 
 export function loadSession(): Session | null {
-  if (!existsSync(SESSION_PATH)) return null;
+  const file = sessionPath();
+  if (!existsSync(file)) return null;
   try {
-    return JSON.parse(readFileSync(SESSION_PATH, "utf8")) as Session;
+    return JSON.parse(readFileSync(file, "utf8")) as Session;
   } catch {
     return null;
   }
 }
 
 export function saveSession(session: Session) {
-  mkdirSync(dirname(SESSION_PATH), { recursive: true });
-  writeFileSync(SESSION_PATH, JSON.stringify(session, null, 2), {
+  const file = sessionPath();
+  mkdirSync(dirname(file), { recursive: true });
+  writeFileSync(file, JSON.stringify(session, null, 2), {
     mode: 0o600,
   });
+}
+
+export function clearSession() {
+  const file = sessionPath();
+  if (existsSync(file)) unlinkSync(file);
+}
+
+/**
+ * Явный вход по кнопке в GUI: всегда запускает device-code flow,
+ * чтобы можно было сменить аккаунт.
+ */
+export async function signIn(
+  clientId: string,
+  onDeviceCode?: (info: DeviceCodeInfo) => void
+): Promise<Session> {
+  const ms = await deviceCodeLogin(clientId, onDeviceCode);
+  savePendingMs(ms);
+  const session = await fullLogin(clientId, ms);
+  saveSession(session);
+  clearPendingMs();
+  return session;
+}
+
+/**
+ * Вход с повторным использованием уже полученного токена Microsoft.
+ * Полезно, если Minecraft Services временно отклонил запрос: следующий клик
+ * по «Войти» не потребует нового кода.
+ */
+export async function signInCached(
+  clientId: string,
+  onDeviceCode?: (info: DeviceCodeInfo) => void
+): Promise<Session> {
+  const pending = loadPendingMs();
+
+  let ms: any;
+  if (pending) {
+    try {
+      ms = await refreshMicrosoft(clientId, pending.refresh_token);
+      savePendingMs(ms);
+    } catch {
+      clearPendingMs();
+    }
+  }
+
+  if (!ms) {
+    ms = await deviceCodeLogin(clientId, onDeviceCode);
+    savePendingMs(ms);
+  }
+
+  const session = await fullLogin(clientId, ms);
+  saveSession(session);
+  clearPendingMs();
+  return session;
 }
 
 /**

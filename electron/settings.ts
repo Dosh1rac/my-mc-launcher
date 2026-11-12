@@ -11,6 +11,7 @@ export interface Settings {
   gameDir: string;
   memoryGb: number;
   showSnapshots: boolean;
+  offlineMode: boolean;
   loaderType: "vanilla" | "forge" | "fabric" | "neoforge";
   loaderVersion: string;
   javaPath: string;
@@ -33,6 +34,7 @@ function defaults(): Settings {
     gameDir: app.isPackaged ? join(app.getPath("appData"), ".void-minecraft") : resolve(process.cwd(), ".minecraft"),
     memoryGb: defaultMemory(),
     showSnapshots: false,
+    offlineMode: true,
     loaderType: "vanilla",
     loaderVersion: "",
     javaPath: "",
@@ -67,6 +69,7 @@ function sanitize(input: Settings): Settings {
       )
     ),
     showSnapshots: Boolean(input.showSnapshots),
+    offlineMode: input.offlineMode !== false,
     loaderType: ["vanilla", "forge", "fabric", "neoforge"].includes(input.loaderType)
       ? input.loaderType
       : "vanilla",

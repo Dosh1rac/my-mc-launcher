@@ -1,6 +1,6 @@
 # VOID — лаунчер Minecraft
 
-**Сайт:** https://dosh1rac.github.io/my-mc-launcher/ · **Скачать:** [Releases](https://github.com/Dosh1rac/my-mc-launcher/releases) · **Версия:** 1.4.1
+**Сайт:** https://dosh1rac.github.io/my-mc-launcher/ · **Скачать:** [Releases](https://github.com/Dosh1rac/my-mc-launcher/releases) · **Версия:** 1.5.0
 
 Лаунчер Minecraft с графическим интерфейсом на Electron: версии и загрузчики, каталог Modrinth, профили, импорт сборок и автоустановка Java. Внутри — общее ядро запуска, которое используют и GUI, и консольный режим.
 
@@ -100,7 +100,8 @@ Portable не требует установки: положил и запуст�
 | `%APPDATA%\my-mc-launcher\runtimes\` | Java, установленная из лаунчера |
 | `%APPDATA%\.void-minecraft\` | папка игры по умолчанию в собранной версии |
 | `<папка игры>\.void-content.json` | журнал установленного контента |
-| `auth/session.json` | токены Microsoft, в git не попадает |
+| `%APPDATA%\my-mc-launcher\session.json` | токены Microsoft (GUI), в git не попадает |
+| `auth/session.json` | токены Microsoft в CLI-режиме, в git не попадает |
 | `last-launch-args.json` | аргументы из `npm run dry`, содержит токен |
 
 В режиме разработки папка игры по умолчанию — `.minecraft/` рядом с проектом.
@@ -136,12 +137,12 @@ my-mc-launcher/
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` — интерфейс не имеет прямого доступа к файлам и процессам, только через узкий IPC.
 - Скачивание контента разрешено только с `cdn.modrinth.com`, с проверкой SHA-512 и ограничением размера.
 - Архивы распаковываются с проверкой путей, запретом `..`, абсолютных путей и symlink.
-- `auth/session.json` содержит `refresh_token` — фактически ключ от аккаунта. Не коммить и не пересылай.
+- `session.json` (в `%APPDATA%\my-mc-launcher\` и в `auth/` для CLI) содержит `refresh_token` — фактически ключ от аккаунта. Не коммить и не пересылай.
 - Не коммить `.env`, `auth/`, `last-launch-args.json`, `accounts.json`, `tokens.json`.
 
 ## Ограничения
 
-- **Онлайн-вход требует одобрения Mojang.** Minecraft Services пускает только client ID из allowlist, поэтому свой Azure-клиент нужно отправить на проверку через [форму из статьи Minecraft Help](https://help.minecraft.net/hc/en-us/articles/16254801392141). До одобрения приходит `403 Invalid app registration` — используй офлайн-режим.
+- **Онлайн-вход** работает: client ID VOID добавлен в allowlist Minecraft Services. Вход идёт через код устройства, пароль вводится только на сайте Microsoft.
 - **Версия Java подбирается вручную.** Лаунчер не определяет автоматически, какая Java нужна конкретной версии Minecraft.
 - **Зависимости модов не ставятся автоматически.** При установке показывается число обязательных зависимостей — их нужно добавить отдельно.
 - **Датапаки** ставятся только в уже существующий мир.

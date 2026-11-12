@@ -11,6 +11,10 @@ function on<T>(channel: string, callback: (payload: T) => void): Unsubscribe {
 
 contextBridge.exposeInMainWorld("launcher", {
   start: (options: unknown) => ipcRenderer.invoke("launcher:start", options),
+  getAuthState: () => ipcRenderer.invoke("auth:state"),
+  signIn: () => ipcRenderer.invoke("auth:sign-in"),
+  signOut: () => ipcRenderer.invoke("auth:sign-out"),
+  onAuthState: (cb: (info: unknown) => void) => on("auth:state", cb),
   openExternal: (url: string) =>
     ipcRenderer.invoke("launcher:open-external", url),
 

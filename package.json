@@ -1,6 +1,6 @@
 {
   "name": "my-mc-launcher",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "VOID Minecraft Launcher",
   "main": "./out/main/index.js",
   "scripts": {

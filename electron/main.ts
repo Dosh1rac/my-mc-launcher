@@ -17,6 +17,11 @@ import { installLoader, installedLoaderId, listLoaderVersions, type LoaderType }
 import { searchContent, installContent, installedContent, listWorlds, toggleContent } from "./content";
 import { importPack } from "./pack-import";
 import { installJava } from "./java";
+import { clearPendingMs, clearSession, loadSession, signInCached } from "../auth";
+import { CLIENT_ID } from "../config";
+
+// Сессия входа хранится в userData: папка установки может быть только для чтения.
+process.env.VOID_SESSION_PATH = join(app.getPath("userData"), "session.json");
 
 let win: BrowserWindow | null = null;
 let downloadController: AbortController | null = null;
@@ -346,6 +351,58 @@ ipcMain.handle("versions:cancel", () => {
   return { ok: true };
 });
 
+/* ---------- Вход в Microsoft ---------- */
+
+type AuthState =
+  | { signedIn: false }
+  | { signedIn: true; name: string; uuid: string };
+
+function currentAuthState(): AuthState {
+  const session = loadSession();
+  if (!session) return { signedIn: false };
+  return {
+    signedIn: true,
+    name: session.minecraft.name,
+    uuid: session.minecraft.uuid,
+  };
+}
+
+let signingIn = false;
+
+ipcMain.handle("auth:state", () => currentAuthState());
+
+ipcMain.handle("auth:sign-in", async () => {
+  if (signingIn) return { ok: false, error: "Вход уже выполняется" };
+  signingIn = true;
+  try {
+    const session = await signInCached(CLIENT_ID, (info) =>
+      send("launcher:device-code", info)
+    );
+    send("launcher:log", `Вход выполнен: ${session.minecraft.name}`);
+    const state: AuthState = {
+      signedIn: true,
+      name: session.minecraft.name,
+      uuid: session.minecraft.uuid,
+    };
+    send("auth:state", state);
+    return { ok: true, ...state };
+  } catch (error) {
+    const message = (error as Error)?.message ?? String(error);
+    send("launcher:log", `[auth] ${message}`);
+    return { ok: false, error: message };
+  } finally {
+    signingIn = false;
+  }
+});
+
+ipcMain.handle("auth:sign-out", () => {
+  clearSession();
+  clearPendingMs();
+  const state: AuthState = { signedIn: false };
+  send("auth:state", state);
+  return { ok: true };
+});
+
 ipcMain.handle("launcher:start", async (_event, options: LaunchOptions) => {
   if (downloadController) {
     return {
@@ -392,6 +449,7 @@ ipcMain.handle("launcher:start", async (_event, options: LaunchOptions) => {
       }
     );
 
+    if (!options?.offline) send("auth:state", currentAuthState());
     return { ok: true };
   } catch (err) {
     return { ok: false, error: (err as Error)?.message ?? String(err) };
