@@ -430,9 +430,31 @@ export async function ensureAuth(
     }
   }
 
+  // Есть незавершённый вход (например, Minecraft Services отклонил запрос):
+  // пробуем довести его без нового кода устройства.
+  const pending = loadPendingMs();
+  if (pending) {
+    let pendingToken: any = null;
+    try {
+      pendingToken = await refreshMicrosoft(clientId, pending.refresh_token);
+      savePendingMs(pendingToken);
+    } catch {
+      clearPendingMs();
+    }
+
+    if (pendingToken) {
+      const session = await fullLogin(clientId, pendingToken);
+      saveSession(session);
+      clearPendingMs();
+      return session;
+    }
+  }
+
   const ms = await deviceCodeLogin(clientId, onDeviceCode);
   console.log("Вход подтверждён, получаю токены Minecraft...");
+  savePendingMs(ms);
   const session = await fullLogin(clientId, ms);
   saveSession(session);
+  clearPendingMs();
   return session;
 }
