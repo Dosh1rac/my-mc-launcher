@@ -27,6 +27,7 @@ tokens.json
 *.token
 
 logs/
+auth-retry.ts
 *.log
 npm-debug.log*
 hs_err_pid*.log
