@@ -69,7 +69,7 @@ contextBridge.exposeInMainWorld("launcher", {
     cb: (info: { verificationUri: string; userCode: string }) => void
   ) => on("launcher:device-code", cb),
   onUpdateState: (
-    cb: (info: { status: string; version?: string; percent?: number }) => void
+    cb: (info: { status: string; version?: string; percent?: number; message?: string; manualUrl?: string }) => void
   ) => on("update:state", cb),
   onVersionProgress: (
     cb: (info: {

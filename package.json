@@ -1,6 +1,6 @@
 {
   "name": "my-mc-launcher",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "VOID Minecraft Launcher",
   "main": "./out/main/index.js",
   "scripts": {
@@ -32,6 +32,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "builder-util-runtime": "9.7.0",
     "electron-updater": "^6.8.11",
     "minecraft-launcher-core": "^3.18.2",
     "yauzl": "^3.4.0"

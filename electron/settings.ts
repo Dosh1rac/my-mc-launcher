@@ -12,6 +12,7 @@ export interface Settings {
   memoryGb: number;
   showSnapshots: boolean;
   offlineMode: boolean;
+  nickname: string;
   loaderType: "vanilla" | "forge" | "fabric" | "neoforge";
   loaderVersion: string;
   javaPath: string;
@@ -35,6 +36,7 @@ function defaults(): Settings {
     memoryGb: defaultMemory(),
     showSnapshots: false,
     offlineMode: true,
+    nickname: "Player",
     loaderType: "vanilla",
     loaderVersion: "",
     javaPath: "",
@@ -70,6 +72,10 @@ function sanitize(input: Settings): Settings {
     ),
     showSnapshots: Boolean(input.showSnapshots),
     offlineMode: input.offlineMode !== false,
+    nickname:
+      typeof input.nickname === "string" && input.nickname.trim()
+        ? input.nickname.trim().slice(0, 16)
+        : fallback.nickname,
     loaderType: ["vanilla", "forge", "fabric", "neoforge"].includes(input.loaderType)
       ? input.loaderType
       : "vanilla",

@@ -10,6 +10,7 @@ interface Settings {
   memoryGb: number;
   showSnapshots: boolean;
   offlineMode: boolean;
+  nickname: string;
   loaderType: LoaderType;
   loaderVersion: string;
   javaPath: string;
@@ -69,10 +70,10 @@ interface LauncherApi {
   getSettings(): Promise<Settings>;
   updateSettings(patch: Partial<Settings>): Promise<Settings>;
   getVersion(): Promise<string>;
-  getUpdateState(): Promise<{ status: string; version?: string; percent?: number; message?: string }>;
+  getUpdateState(): Promise<{ status: string; version?: string; percent?: number; message?: string; manualUrl?: string }>;
   installUpdate(): Promise<{ ok: boolean }>;
   checkForUpdates(): Promise<unknown>;
-  onUpdateState(cb: (info: { status: string; version?: string; percent?: number; message?: string }) => void): () => void;
+  onUpdateState(cb: (info: { status: string; version?: string; percent?: number; message?: string; manualUrl?: string }) => void): () => void;
   getSystemInfo(): Promise<SystemInfo>;
   getJavaInfo(): Promise<{ ok: boolean; text: string }>;
   pickJava(): Promise<{ path: string; text: string } | null>;
@@ -158,8 +159,11 @@ const signOutBtn = $<HTMLButtonElement>("signOut");
 const nicknameField = $<HTMLElement>("nicknameField");
 
 const headerVersion = $<HTMLElement>("headerVersion");
+const headerMeta = $<HTMLElement>("headerMeta");
 const versionChip = $<HTMLElement>("versionChip");
 const memoryChip = $<HTMLElement>("memoryChip");
+const sidebarDot = $<HTMLElement>("sidebarDot");
+const sidebarStatus = $<HTMLElement>("sidebarStatus");
 
 const showSnapshots = $<HTMLInputElement>("showSnapshots");
 const versionSearch = $<HTMLInputElement>("versionSearch");
@@ -195,6 +199,8 @@ let settings: Settings = {
   gameDir: "",
   memoryGb: 4,
   showSnapshots: false,
+  offlineMode: true,
+  nickname: "Player",
   loaderType: "vanilla",
   loaderVersion: "",
   javaPath: "",
@@ -231,6 +237,7 @@ const updateBadge = $<HTMLButtonElement>("updateBadge");
 const updateInfo = $<HTMLElement>("updateInfo");
 const checkUpdateBtn = $<HTMLButtonElement>("checkUpdate");
 let updateInstallReady = false;
+let updateManualUrl: string | undefined;
 
 const UPDATE_TEXTS: Record<string, string> = {
   checking: "Проверяю обновления...",
@@ -238,8 +245,9 @@ const UPDATE_TEXTS: Record<string, string> = {
   error: "Не удалось проверить обновления. Проверь интернет или попробуй позже.",
 };
 
-function renderUpdateState(state: { status: string; version?: string; percent?: number; message?: string }) {
+function renderUpdateState(state: { status: string; version?: string; percent?: number; message?: string; manualUrl?: string }) {
   updateInstallReady = false;
+  updateManualUrl = undefined;
   updateBadge.classList.add("hidden");
   if (state.status === "checking") {
     updateInfo.textContent = UPDATE_TEXTS.checking;
@@ -258,13 +266,28 @@ function renderUpdateState(state: { status: string; version?: string; percent?: 
     updateInfo.textContent = `Обновление ${state.version} готово. Можно перезапустить сразу — установка займёт несколько секунд.`;
     return;
   }
-  if (state.status === "latest" || state.status === "error") {
-    updateInfo.textContent = UPDATE_TEXTS[state.status];
+  if (state.status === "latest") {
+    updateInfo.textContent = state.message || UPDATE_TEXTS.latest;
+    return;
+  }
+  if (state.status === "error") {
+    if (state.manualUrl && state.version) {
+      updateBadge.textContent = `↓ ${state.version} — вручную`;
+      updateBadge.classList.remove("hidden");
+      updateManualUrl = state.manualUrl;
+      updateInfo.textContent = state.message || `Не удалось скачать ${state.version} автоматически — скачай вручную.`;
+    } else {
+      updateInfo.textContent = UPDATE_TEXTS.error;
+    }
   }
 }
 
 updateBadge.addEventListener("click", () => {
-  if (updateInstallReady) void window.launcher.installUpdate();
+  if (updateInstallReady) {
+    void window.launcher.installUpdate();
+  } else if (updateManualUrl) {
+    void window.launcher.openExternal(updateManualUrl);
+  }
 });
 
 checkUpdateBtn.addEventListener("click", async () => {
@@ -343,9 +366,26 @@ function persist(patch: Partial<Settings>) {
     });
 }
 
+const LOADER_LABELS: Record<LoaderType, string> = {
+  vanilla: "vanilla",
+  fabric: "Fabric",
+  forge: "Forge",
+  neoforge: "NeoForge",
+};
+
 function updateHeader() {
+  const loaderName = LOADER_LABELS[settings.loaderType] ?? settings.loaderType;
   headerVersion.textContent = settings.version;
-  versionChip.textContent = settings.version;
+  headerMeta.textContent =
+    settings.loaderType === "vanilla"
+      ? "vanilla"
+      : settings.loaderVersion
+        ? `${loaderName} ${settings.loaderVersion}`
+        : loaderName;
+  versionChip.textContent =
+    settings.loaderType === "vanilla"
+      ? settings.version
+      : `${settings.version} · ${loaderName}`;
   memoryChip.textContent = `${settings.memoryGb} ГБ`;
   selectedVersion.textContent = settings.version;
   updateDownloadState();
@@ -404,6 +444,7 @@ function syncSettingsUI() {
   gameDirEl.title = settings.gameDir;
   showSnapshots.checked = settings.showSnapshots;
   offlineEl.checked = settings.offlineMode;
+  nicknameEl.value = settings.nickname || "Player";
   setupMemory();
 }
 
@@ -653,6 +694,9 @@ $("saveProfile").addEventListener("click", async () => {
   try { await window.launcher.saveProfile(name); await refreshProfiles(); $("installedHint").textContent = "Сборка сохранена в списке."; }
   catch (error) { $("installedHint").textContent = `Ошибка: ${(error as Error).message}`; }
 });
+$("profileName").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") $("saveProfile").click();
+});
 profileSelect.addEventListener("change", async () => {
   if (!profileSelect.value) return;
   const profile = profiles[Number(profileSelect.value)];
@@ -663,9 +707,28 @@ profileSelect.addEventListener("change", async () => {
     $("installedHint").textContent = `Выбрана сборка: ${profile.name}`;
   } catch (error) { $("installedHint").textContent = `Ошибка: ${(error as Error).message}`; }
 });
+function updateSidebarJava(ok: boolean, text: string) {
+  sidebarDot.classList.toggle("warn", !ok);
+  if (!ok) {
+    sidebarStatus.textContent = "Java не найдена";
+    return;
+  }
+  const match = /version\s+"(\d+)(?:\.(\d+))?/i.exec(text);
+  const major = match ? (match[1] === "1" && match[2] ? match[2] : match[1]) : "";
+  sidebarStatus.textContent = major ? `Java ${major} · готова` : "Java · готова";
+}
+
 async function refreshJava() {
-  try { const info = await window.launcher.getJavaInfo(); $("javaInfo").textContent = info.text; }
-  catch (error) { $("javaInfo").textContent = `Ошибка Java: ${(error as Error).message}`; }
+  try {
+    const info = await window.launcher.getJavaInfo();
+    $("javaInfo").textContent = info.text;
+    updateSidebarJava(info.ok, info.text);
+  }
+  catch (error) {
+    const msg = (error as Error).message;
+    $("javaInfo").textContent = `Ошибка Java: ${msg}`;
+    updateSidebarJava(false, msg);
+  }
 }
 $("refreshJava").addEventListener("click", () => void refreshJava());
 $("pickJava").addEventListener("click", async () => {
@@ -709,7 +772,7 @@ importPackButton.addEventListener("click", async () => {
 });
 const installedVersion = $<HTMLSelectElement>("installedVersion");
 let localVersions: Array<{ id: string; version: string; loaderType: LoaderType; loaderVersion: string }> = [];
-async function refreshInstalled() {
+async function refreshInstalled(notify = false) {
   try {
     localVersions = await window.launcher.installedVersions();
     installedVersion.replaceChildren();
@@ -718,9 +781,14 @@ async function refreshInstalled() {
       const option = document.createElement("option"); option.value = item.id; option.textContent = item.id; installedVersion.append(option);
       if (item.version === settings.version && item.loaderType === settings.loaderType && item.loaderVersion === settings.loaderVersion) installedVersion.value = item.id;
     }
+    if (notify) {
+      $("installedHint").textContent = localVersions.length
+        ? `Список обновлён: найдено ${localVersions.length} ${pluralVersions(localVersions.length)}.`
+        : "Список обновлён: установленные версии не найдены.";
+    }
   } catch (error) { $("installedHint").textContent = `Ошибка: ${(error as Error).message}`; }
 }
-$("refreshInstalled").addEventListener("click", () => void refreshInstalled());
+$("refreshInstalled").addEventListener("click", () => void refreshInstalled(true));
 installedVersion.addEventListener("change", async () => {
   const item = localVersions.find((entry) => entry.id === installedVersion.value);
   if (!item) return;
@@ -751,6 +819,12 @@ contentType.addEventListener("change", async () => {
 });
 contentWorld.addEventListener("change", () => { catalogOffset = 0; void searchCatalog(); });
 $("contentSearch").addEventListener("click", () => { catalogOffset = 0; void searchCatalog(); });
+$("contentQuery").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    catalogOffset = 0;
+    void searchCatalog();
+  }
+});
 $("catalogPrev").addEventListener("click", () => { catalogOffset = Math.max(0, catalogOffset - 30); void searchCatalog(); });
 $("catalogNext").addEventListener("click", () => { if (catalogOffset + 30 < catalogTotal) { catalogOffset += 30; void searchCatalog(); } });
 async function searchCatalog() {
@@ -960,11 +1034,11 @@ resetSettingsBtn.addEventListener("click", async () => {
     memoryGb,
     version: "1.20.1",
     showSnapshots: false,
+    loaderType: "vanilla",
+    loaderVersion: "",
   });
 
-  applyTheme(settings.theme);
-  showSnapshots.checked = settings.showSnapshots;
-  setupMemory();
+  syncSettingsUI();
   updateHeader();
   renderVersions();
   versionsLoaded = false;
@@ -1024,6 +1098,7 @@ function renderAccount() {
   nicknameField.classList.toggle("hidden", !offline);
   signInBtn.classList.toggle("hidden", offline || authState.signedIn);
   signOutBtn.classList.toggle("hidden", offline || !authState.signedIn);
+  if (offline) authCard.classList.add("hidden");
 
   if (offline) {
     const nick = nicknameEl.value.trim() || "Player";
@@ -1064,8 +1139,14 @@ offlineEl.addEventListener("change", () => {
   persist({ offlineMode: offlineEl.checked });
 });
 
+let nicknameSaveTimer: ReturnType<typeof setTimeout> | undefined;
 nicknameEl.addEventListener("input", () => {
   if (offlineEl.checked) renderAccount();
+  clearTimeout(nicknameSaveTimer);
+  nicknameSaveTimer = setTimeout(() => {
+    const nick = nicknameEl.value.trim() || "Player";
+    persist({ nickname: nick });
+  }, 350);
 });
 
 signInBtn.addEventListener("click", async () => {

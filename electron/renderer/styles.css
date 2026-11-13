@@ -456,9 +456,9 @@ body {
 .update-badge {
   appearance: none;
   margin-top: 6px;
-  border: 1px solid rgba(192, 132, 252, 0.5);
-  background: rgba(192, 132, 252, 0.12);
-  color: #e9d5ff;
+  border: 1px solid var(--nav-active-border);
+  background: var(--nav-active-bg);
+  color: var(--heading);
   font: inherit;
   font-size: 10px;
   font-weight: 700;
@@ -471,8 +471,8 @@ body {
 }
 
 .update-badge:hover {
-  background: rgba(192, 132, 252, 0.24);
-  border-color: rgba(216, 180, 254, 0.7);
+  background: var(--nav-hover);
+  border-color: var(--control-focus);
 }
 
 .update-badge.hidden {
@@ -533,10 +533,16 @@ body {
 .dot {
   width: 7px;
   height: 7px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--mint);
   box-shadow: 0 0 10px var(--mint);
   animation: dot-blink 2.4s ease-in-out infinite;
+}
+
+.dot.warn {
+  background: var(--amber);
+  box-shadow: 0 0 10px var(--amber);
 }
 
 @keyframes dot-blink {
@@ -1123,10 +1129,16 @@ input[type="range"]::-moz-range-thumb {
     background 0.15s;
 }
 
-.ghost:hover {
+.ghost:hover:not(:disabled) {
   color: var(--text);
   border-color: var(--control-border-hover);
   background: var(--ghost-hover-bg);
+}
+
+.ghost:disabled {
+  opacity: 0.42;
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ---------- Versions ---------- */

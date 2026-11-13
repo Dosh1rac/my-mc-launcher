@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { arch, cpus, freemem, platform, totalmem } from "node:os";
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { autoUpdater } from "electron-updater";
+import { CancellationToken } from "builder-util-runtime";
 import { launch, type LaunchOptions } from "../core";
 import { getSettings, updateSettings, type Settings } from "./settings";
 import {
@@ -483,46 +484,118 @@ ipcMain.handle("launcher:open-external", async (_event, url: string) => {
 
 // Portable-сборка не может заменить собственный EXE — обновление через сайт.
 const isPortable = Boolean(process.env.PORTABLE_EXECUTABLE_DIR);
+const RELEASES_LATEST_URL = "https://github.com/Dosh1rac/my-mc-launcher/releases/latest";
+const UPDATE_STALL_TIMEOUT_MS = 60_000;
+const UPDATE_WATCHDOG_INTERVAL_MS = 15_000;
+const UPDATE_MAX_ATTEMPTS = 3;
 
 let updateState: {
   status: "idle" | "checking" | "downloading" | "downloaded" | "latest" | "error";
   version?: string;
   percent?: number;
   message?: string;
+  manualUrl?: string;
 } = { status: "idle" };
+
+let updateDownloadActive = false;
+let lastProgressAt = 0;
+let lastTransferred = -1;
 
 function setUpdateState(patch: Partial<typeof updateState>) {
   updateState = { ...updateState, ...patch };
   send("update:state", updateState);
 }
 
-autoUpdater.autoDownload = true;
+async function startUpdateDownload(version: string) {
+  if (updateDownloadActive) return;
+  updateDownloadActive = true;
+
+  try {
+    for (let attempt = 1; attempt <= UPDATE_MAX_ATTEMPTS; attempt++) {
+      if (attempt > 1) {
+        send("launcher:log", `[update] Повторная попытка загрузки ${version} (${attempt}/${UPDATE_MAX_ATTEMPTS})...`);
+        setUpdateState({ status: "downloading", version, percent: 0, manualUrl: undefined, message: undefined });
+      }
+
+      const token = new CancellationToken();
+      lastProgressAt = Date.now();
+      lastTransferred = -1;
+
+      const watchdog = setInterval(() => {
+        if (Date.now() - lastProgressAt >= UPDATE_STALL_TIMEOUT_MS && !token.cancelled) {
+          send("launcher:log", "[update] Нет прогресса 60 с, отменяю зависшую загрузку...");
+          token.cancel();
+        }
+      }, UPDATE_WATCHDOG_INTERVAL_MS);
+
+      try {
+        await autoUpdater.downloadUpdate(token);
+        return;
+      } catch (err) {
+        const msg = (err as Error)?.message ?? String(err);
+        send("launcher:log", `[update] Попытка ${attempt}/${UPDATE_MAX_ATTEMPTS} не удалась: ${msg}`);
+        if (attempt < UPDATE_MAX_ATTEMPTS) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
+      } finally {
+        clearInterval(watchdog);
+      }
+    }
+
+    send("launcher:log", `[update] Не удалось скачать ${version} автоматически. Доступно ручное скачивание.`);
+    setUpdateState({
+      status: "error",
+      version,
+      manualUrl: RELEASES_LATEST_URL,
+      message: `Не удалось скачать ${version} автоматически — скачай вручную.`,
+    });
+  } finally {
+    updateDownloadActive = false;
+  }
+}
+
+autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
-autoUpdater.on("checking-for-update", () => setUpdateState({ status: "checking" }));
+autoUpdater.on("checking-for-update", () => {
+  setUpdateState({ status: "checking", manualUrl: undefined, message: undefined });
+});
 
 autoUpdater.on("update-available", (info) => {
   send("launcher:log", `Найдено обновление ${info.version}, скачиваю...`);
-  setUpdateState({ status: "downloading", version: info.version, percent: 0 });
+  setUpdateState({
+    status: "downloading",
+    version: info.version,
+    percent: 0,
+    manualUrl: undefined,
+    message: undefined,
+  });
+  void startUpdateDownload(info.version);
 });
 
 autoUpdater.on("download-progress", (progress) => {
+  if (progress.transferred !== lastTransferred) {
+    lastTransferred = progress.transferred;
+    lastProgressAt = Date.now();
+  }
   setUpdateState({ percent: Math.round(progress.percent) });
 });
 
 autoUpdater.on("update-downloaded", (info) => {
   send("launcher:log", `Обновление ${info.version} скачано. Установится при выходе или нажми «Перезапустить».`);
-  setUpdateState({ status: "downloaded", version: info.version, percent: 100 });
+  setUpdateState({ status: "downloaded", version: info.version, percent: 100, manualUrl: undefined, message: undefined });
 });
 
 autoUpdater.on("update-not-available", () => {
-  setUpdateState({ status: "latest", message: "У тебя последняя версия VOID." });
+  setUpdateState({ status: "latest", version: undefined, percent: undefined, manualUrl: undefined, message: "У тебя последняя версия VOID." });
 });
 
 autoUpdater.on("error", (error) => {
-  // Нет сети или GitHub недоступен — не критично, тихо в лог.
+  // Нет сети или GitHub недоступен — во время retry не сбиваем UI раньше времени.
   send("launcher:log", `[update] ${(error as Error).message}`);
-  setUpdateState({ status: "error", message: (error as Error).message });
+  if (!updateDownloadActive) {
+    setUpdateState({ status: "error", manualUrl: undefined, message: (error as Error).message });
+  }
 });
 
 ipcMain.handle("update:state", () => updateState);
@@ -532,6 +605,19 @@ ipcMain.handle("update:install", () => {
   return { ok: true };
 });
 ipcMain.handle("update:check", async () => {
+  if (isPortable) {
+    setUpdateState({
+      status: "latest",
+      version: undefined,
+      percent: undefined,
+      manualUrl: undefined,
+      message: "Portable-версия обновляется вручную с GitHub Releases.",
+    });
+    return updateState;
+  }
+  if (updateDownloadActive || updateState.status === "downloaded") {
+    return updateState;
+  }
   try {
     await autoUpdater.checkForUpdates();
   } catch (error) {
@@ -554,7 +640,7 @@ app.whenReady().then(() => {
   });
 
   if (app.isPackaged && !isPortable) {
-    autoUpdater.checkForUpdatesAndNotify().catch((error) => {
+    autoUpdater.checkForUpdates().catch((error) => {
       send("launcher:log", `[update] Проверка обновления не удалась: ${(error as Error).message}`);
     });
   }

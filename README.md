@@ -1,6 +1,6 @@
 # VOID — лаунчер Minecraft
 
-**Сайт:** https://dosh1rac.github.io/my-mc-launcher/ · **Скачать:** [Releases](https://github.com/Dosh1rac/my-mc-launcher/releases) · **Версия:** 1.5.2
+**Сайт:** https://dosh1rac.github.io/my-mc-launcher/ · **Скачать:** [Releases](https://github.com/Dosh1rac/my-mc-launcher/releases) · **Версия:** 1.5.3
 
 Лаунчер Minecraft с графическим интерфейсом на Electron: версии и загрузчики, каталог Modrinth, профили, импорт сборок и автоустановка Java. Внутри — общее ядро запуска, которое используют и GUI, и консольный режим.
 
