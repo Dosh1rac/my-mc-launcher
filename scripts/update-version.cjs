@@ -12,15 +12,23 @@ function patch(file, fn) {
   console.log(`updated ${file}`);
 }
 
-patch('package-lock.json', (text) => text.replace(/"version": "1\.5\.\d+"/g, `"version": "${version}"`));
+// package-lock: меняем только версию самого проекта, не трогая зависимости.
+patch('package-lock.json', (text) => {
+  const lock = JSON.parse(text);
+  lock.version = version;
+  if (lock.packages && lock.packages[""]) lock.packages[""].version = version;
+  return JSON.stringify(lock, null, 2) + '\n';
+});
 patch('site/config.js', (text) => text.replace(/FALLBACK_VERSION = "[^"]*"/, `FALLBACK_VERSION = "${version}"`));
 patch('site/index.html', (text) =>
   text
-    .replace(/VOID-Setup-1\.5\.\d+\.exe/g, `VOID-Setup-${version}.exe`)
-    .replace(/VOID-Portable-1\.5\.\d+\.exe/g, `VOID-Portable-${version}.exe`)
-    .replace(/<b class="js-version">1\.5\.\d+<\/b>/, `<b class="js-version">${version}</b>`)
+    .replace(/VOID-Setup-\d+\.\d+\.\d+\.exe/g, `VOID-Setup-${version}.exe`)
+    .replace(/VOID-Portable-\d+\.\d+\.\d+\.exe/g, `VOID-Portable-${version}.exe`)
+    .replace(/<b class="js-version">\d+\.\d+\.\d+<\/b>/, `<b class="js-version">${version}</b>`)
 );
-patch('README.md', (text) => text.replace(/\*\*Версия:\*\* 1\.5\.\d+/, `**Версия:** ${version}`));
+patch('README.md', (text) => text.replace(/\*\*Версия:\*\* \d+\.\d+\.\d+/, `**Версия:** ${version}`));
 patch('electron/renderer/index.html', (text) =>
-  text.replace(/<div class="brand-sub" id="brandSub">[^<]*<\/div>/, `<div class="brand-sub" id="brandSub">${version} · deep space</div>`)
+  text
+    .replace(/<div class="brand-sub" id="brandSub">[^<]*<\/div>/, `<div class="brand-sub" id="brandSub">${version} · deep space</div>`)
 );
+patch('site/index.html', (text) => text.replace(/VOID \d+\.\d+\.\d+/g, `VOID ${version}`));
