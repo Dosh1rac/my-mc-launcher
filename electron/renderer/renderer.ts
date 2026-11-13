@@ -65,6 +65,7 @@ interface LaunchOptions {
 
 interface LauncherApi {
   start(options: LaunchOptions): Promise<LaunchResult>;
+  stop(): Promise<{ ok: boolean; error?: string }>;
   openExternal(url: string): Promise<void>;
 
   getSettings(): Promise<Settings>;
@@ -214,6 +215,8 @@ let currentView = "play";
 let memorySaveTimer: ReturnType<typeof setTimeout> | undefined;
 let logLines: string[] = [];
 let authUrl = "https://www.microsoft.com/link";
+let gameRunning = false;
+let stoppingGame = false;
 
 const THEME_NAMES: Record<Theme, string> = {
   dark: "Тёмная",
@@ -1126,8 +1129,19 @@ function renderAccount() {
 }
 
 function resetPlayButton() {
+  gameRunning = false;
+  stoppingGame = false;
   playBtn.disabled = false;
   playBtn.textContent = "Играть";
+  playBtn.classList.remove("stop");
+}
+
+function setGameRunning() {
+  gameRunning = true;
+  stoppingGame = false;
+  playBtn.disabled = false;
+  playBtn.textContent = "■ Остановить";
+  playBtn.classList.add("stop");
 }
 
 function updateAccountHint() {
@@ -1218,7 +1232,23 @@ authCode.addEventListener("click", async () => {
 });
 
 playBtn.addEventListener("click", async () => {
-  if (playBtn.disabled) return;
+  if (playBtn.disabled || stoppingGame) return;
+
+  if (gameRunning) {
+    stoppingGame = true;
+    playBtn.disabled = true;
+    playBtn.textContent = "Останавливаю...";
+    setStatus("Останавливаю игру...", 0);
+    const result = await window.launcher.stop();
+    if (!result.ok) {
+      appendLog(`[error] Не удалось остановить игру: ${result.error ?? "неизвестная ошибка"}`);
+      setStatus(result.error ?? "Не удалось остановить игру", 0, true);
+      stoppingGame = false;
+      playBtn.disabled = false;
+      playBtn.textContent = "■ Остановить";
+    }
+    return;
+  }
 
   playBtn.disabled = true;
   playBtn.textContent = "Запуск...";
@@ -1269,6 +1299,7 @@ window.launcher.onStarted((pid) => {
   appendLog(`Minecraft запущен${pid ? `, PID ${pid}` : ""}`);
   setStatus("Игра запущена");
   setProgress(100);
+  setGameRunning();
 });
 
 window.launcher.onClose((code) => {

@@ -3,6 +3,8 @@ import { ensureAuth } from "./auth";
 import { CLIENT_ID } from "./config";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 export interface LaunchOptions {
   version?: string;
@@ -125,4 +127,28 @@ export async function launch(
 
   callbacks.onStarted?.(proc.pid);
   return client;
+}
+
+/**
+ * Останавливает игру. Сначала пробуем мягко (SIGTERM / taskkill без /F),
+ * при необходимости добиваем дерево процессов принудительно.
+ */
+export async function stopGame(pid: number, force = false): Promise<void> {
+  if (!Number.isInteger(pid) || pid <= 0) {
+    throw new Error("Игра не запущена");
+  }
+
+  if (process.platform === "win32") {
+    const args = ["/PID", String(pid), "/T"];
+    if (force) args.push("/F");
+    await promisify(execFile)("taskkill", args, { windowsHide: true });
+    return;
+  }
+
+  try {
+    process.kill(pid, force ? "SIGKILL" : "SIGTERM");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ESRCH") return;
+    throw error;
+  }
 }

@@ -7,7 +7,7 @@ import { arch, cpus, freemem, platform, totalmem } from "node:os";
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import { autoUpdater } from "electron-updater";
 import { CancellationToken } from "builder-util-runtime";
-import { launch, type LaunchOptions } from "../core";
+import { launch, stopGame, type LaunchOptions } from "../core";
 import { getSettings, updateSettings, type Settings } from "./settings";
 import {
   downloadVersion,
@@ -421,6 +421,43 @@ ipcMain.handle("auth:sign-out", () => {
   return { ok: true };
 });
 
+let gamePid: number | null = null;
+let stoppingGame = false;
+
+function handleGameEnd() {
+  gamePid = null;
+  stoppingGame = false;
+}
+
+ipcMain.handle("launcher:stop", async () => {
+  if (!gamePid) return { ok: false, error: "Игра не запущена" };
+  const pid = gamePid;
+  stoppingGame = true;
+
+  try {
+    await stopGame(pid);
+  } catch {
+    // без /F Windows часто не может закрыть консольный процесс — добиваем ниже
+    try {
+      await stopGame(pid, true);
+    } catch (error) {
+      stoppingGame = false;
+      return { ok: false, error: (error as Error).message };
+    }
+  }
+
+  // Если процесс не отдал «close» за 4 секунды — принудительно снимаем дерево.
+  setTimeout(() => {
+    if (gamePid === pid && stoppingGame) {
+      void stopGame(pid, true).catch((error) =>
+        send("launcher:log", `[stop] ${(error as Error).message}`)
+      );
+    }
+  }, 4000);
+
+  return { ok: true };
+});
+
 ipcMain.handle("launcher:start", async (_event, options: LaunchOptions) => {
   if (downloadController) {
     return {
@@ -461,8 +498,15 @@ ipcMain.handle("launcher:start", async (_event, options: LaunchOptions) => {
         onLog: (line) => send("launcher:log", line),
         onProgress: (info) => send("launcher:progress", info),
         onDownload: (info) => send("launcher:download", info),
-        onStarted: (pid) => send("launcher:started", pid),
-        onClose: (code) => send("launcher:close", code),
+        onStarted: (pid) => {
+          gamePid = typeof pid === "number" && pid > 0 ? pid : null;
+          stoppingGame = false;
+          send("launcher:started", pid);
+        },
+        onClose: (code) => {
+          handleGameEnd();
+          send("launcher:close", code);
+        },
         onDeviceCode: (info) => send("launcher:device-code", info),
       }
     );
